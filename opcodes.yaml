@@ -1,0 +1,12 @@
+- name: AbsoluteValue
+  request:
+    opcode: 0x7c
+    params:
+      - name: index
+        ty: u8
+      - name: source
+        ty: u8
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0x8b
