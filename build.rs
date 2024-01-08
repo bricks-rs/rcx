@@ -8,11 +8,46 @@ use std::{
 const OPCODES_FILE: &str = "opcodes.yaml";
 const CODEGEN_FILE: &str = "opcodes.rs";
 
+mod filters {
+    pub fn hex(n: &u8) -> askama::Result<String> {
+        Ok(format!("0x{n:02x}"))
+    }
+}
+
+const fn true_() -> bool {
+    true
+}
+
 #[derive(Deserialize)]
 struct Opcode {
     name: String,
+    description: String,
+    #[serde(default)]
+    context: Context,
+    #[serde(default = "true_")]
+    supports_alternate: bool,
     request: RequestResponse,
-    response: RequestResponse,
+    response: Option<RequestResponse>,
+}
+
+#[derive(Deserialize)]
+struct Context {
+    #[serde(default)]
+    request: bool,
+    #[serde(default)]
+    response: bool,
+    #[serde(default)]
+    instruction: bool,
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            request: true,
+            response: true,
+            instruction: true,
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -22,9 +57,14 @@ struct RequestResponse {
     params: Vec<Param>,
 }
 
+fn u8_() -> String {
+    "u8".into()
+}
+
 #[derive(Deserialize)]
 struct Param {
     name: String,
+    #[serde(default = "u8_")]
     ty: String,
 }
 

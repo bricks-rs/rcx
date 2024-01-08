@@ -1,12 +1,392 @@
 - name: AbsoluteValue
+  description: |
+    # 74/7c 	Request/Command
+
+    * byte *index* 	Destination variable index. 0..31.
+    * byte *source* 	Source type for operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for operand.
+
+    Compute the absolute value of the value specified by source and argument and store the result in variable index. The absolute value of the largest negative number, -32768, is defined to be the largest positive number, 32767.
+
+    # 83/8b 	Reply
+
+    * void
+
+    Reply indicates success.
   request:
-    opcode: 0x7c
+    opcode: 0x74
     params:
       - name: index
-        ty: u8
       - name: source
-        ty: u8
       - name: argument
         ty: i16
   response:
-    opcode: 0x8b
+    opcode: 0x83
+
+- name: Alive
+  description: |
+    # 10/18 	Request
+
+    * void
+
+    Check whether or not the RCX is alive. If the PC receives a reply to this request, it assumes the RCX is alive and the connection is good.
+
+    # e7/ef 	Reply
+
+    * void
+
+    Reply indicates that the RCX is alive.
+  request:
+    opcode: 0x10
+  response:
+    opcode: 0xe7
+
+- name: AddToVariable
+  description: |
+    # 24/2c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Add the value specified by source and argument to the value of variable index, and store the result in variable index.
+
+    # d3/db 	Reply
+
+    void
+
+    Reply indicates success.
+  request:
+    opcode: 0x24
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0xd3
+
+- name: AndVariable
+  description: |
+    # 84/8c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Compute the logical AND of the value specified by source and argument and the value of variable index, and store the result in variable index.
+
+    # 73/7b 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x84
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0x73
+
+- name: BranchAlwaysFar
+  description: |
+    # 72/xx 	Command
+
+    * ubyte *offset* 	Offset for computing branch target address.
+    * ubyte *extension* 	Extension to offset.
+
+    Branch to the target address specified by offset and extension.
+
+    If bit 0x80 of offset is 0, the target address computed as:
+
+    *    address of offset + offset + 128 × extension.
+
+    Otherwise, the target address computed as:
+
+    *    address of offset - offset - 128 × extension + 128.
+  request:
+    opcode: 0x72
+    supports_alternate: false
+    params:
+      - name: offset
+      - name: extension
+
+- name: BranchAlwaysNear
+  description: |
+    # 27/xx 	Command
+
+    * ubyte *offset* 	Offset for computing branch target address.
+
+    Branch to the target address specified by offset.
+
+    If bit 0x80 of offset is 0, the target address computed as:
+
+    *   address of offset + offset.
+
+    Otherwise, the target address computed as:
+
+    *    address of offset - offset + 128.
+  request:
+    opcode: 0x27
+    supports_alternate: false
+    params:
+      - name: offset
+      - name: extension
+
+- name: CallSubroutine
+  description: |
+    # 17/xx 	Command
+
+    * byte *subroutine* 	Index of subroutine to call. 0..7.
+
+    Call the subroutine with index subroutine. If the subroutine is not defined, do nothing.
+
+    The RCX only supports one subroutine return address per task. If one subroutine calls another subroutine, execution of all tasks stops when the original subroutine returns.
+  request:
+    opcode: 0x17
+    supports_alternate: false
+    params:
+      - name: subroutine
+
+- name: ClearMessage
+  description: |
+    # 90/xx 	Command
+
+    * void
+
+    Clear the message buffer by setting it to zero. The message buffer stores a single byte and allows for communication between multiple RCX units.
+
+    See also: [SendMessage], [SetMessage].
+  request:
+    opcode: 0x90
+    supports_alternate: false
+
+- name: ClearSensorValue
+  description: |
+    # d1/d9 	Request/Command
+
+    * byte *sensor* 	Index of sensor to clear. 0..2.
+
+    Clear the counter associated with the specified sensor by setting it to a value of zero.
+
+    # 26/2e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0xd1
+    params:
+      - name: sensor
+  response:
+    opcode: 0x26
+
+- name: ClearTimer
+  description: |
+    # a1/a9 	Request/Command
+
+    * byte *timer* 	Index of timer to clear. 0..3.
+
+    Clear the specified timer by setting it to a value of zero.
+
+    # 56/5e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0xa1
+    params:
+      - name: timer
+  response:
+    opcode: 0x56
+
+- name: DatalogNext
+  description: |
+    # 62/6a 	Request/Command
+
+    * byte *source* 	Source type for next datalog entry. Only 0, 1, 9, and 14 allowed.
+    * byte *argument* 	Argument for next datalog entry.
+
+    Set the next datalog entry to the value specified by source and argument. If the datalog is full, leave it unmodified.
+
+    # 95/9d 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, while a return value of 1 indicates that the datalog was full.
+  request:
+    opcode: 0x62
+    params:
+      - name: source
+      - name: argument
+  response:
+    opcode: 0x95
+    params:
+      - name: errorcode
+
+- name: DecrementLoopCounterFar
+  description: |
+    # 92/xx 	Command
+
+    * ushort *offset* 	Offset for computing branch target address.
+
+    Decrement the current loop counter, then, if the loop counter is less than zero, pop the loop counter stack and branch to the target address specified by offset.
+
+    The branch target address is computed as:
+
+    *    address of first byte of offset + offset.
+
+    Note that offset is unsigned. Backward branching is not allowed with this operation.
+  request:
+    opcode: 0x92
+    supports_alternate: false
+    params:
+      - name: offset
+        ty: u16
+
+- name: DecrementLoopCounterNear
+  description: |
+    # 37/xx 	Command
+
+    * ubyte *offset* 	Offset for computing branch target address.
+
+    Decrement the current loop counter, then, if the loop counter is less than zero, pop the loop counter stack and branch to the target address specified by offset.
+
+    The branch target address is computed as:
+
+    *    address of offset + offset.
+
+    Note that offset is unsigned. Backward branching is not allowed with this operation.
+  request:
+    opcode: 0x37
+    supports_alternate: false
+    params:
+      - name: offset
+
+- name: DeleteAllSubroutines
+  description: |
+    # 70/78 	Request/Command
+
+    * void
+
+    Delete all subroutines belonging to the current program.
+
+    # 87/8f 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x70
+  response:
+    opcode: 0x87
+
+- name: DeleteAllTasks
+  description: |
+    # 40/48 	Request/Command
+
+    * void
+
+    Stop execution and delete all tasks belonging to the current program.
+
+    # b7/bf 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x40
+  response:
+    opcode: 0xb7
+
+- name: DeleteFirmware
+  description: |
+    # 65/6d 	Request/Command
+
+    * byte *key[5]* 	Key. Must be {1,3,5,7,11}.
+
+    If key is valid, stop execution and delete the firmware. Otherwise, do nothing. The key prevents the firmware from being accidentally erased.
+
+    Before the firmware may be replaced, it must be deleted.
+
+    # 92/9a 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x65
+    params:
+      - name: key
+        ty: "[u8; 5]"
+  response:
+    opcode: 0x92
+
+- name: DeleteSubroutine
+  description: |
+    # c1/c9 	Request/Command
+
+    * byte *subroutine* 	Index of subroutine to delete. 0..7.
+
+    Delete the specified subroutine. If the subroutine is currently being executed, the related task is stopped.
+
+    # 36/3e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0xc1
+    params:
+      - name: subroutine
+  response:
+    opcode: 0x36
+
+- name: DeleteTask
+  description: |
+    # 61/69 	Request/Command
+
+    * byte *task* 	Index of task to delete. 0..9.
+
+    Delete the specified task. If the task is currently running, execution of all tasks stops.
+
+    # 96/9e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x61
+    params:
+      - name: task
+  response:
+    opcode: 0x96
+
+- name: DivideVariable
+  description: |
+    # 44/4c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Divide the value of variable index by the value specified by source and argument, and store the result in variable index. If the source and argument specify a denominator of zero, the variable index is left unchanged.
+
+    # b3/bb 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x44
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0xb3
