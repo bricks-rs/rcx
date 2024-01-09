@@ -53,7 +53,7 @@
 
     # d3/db 	Reply
 
-    void
+    * void
 
     Reply indicates success.
   request:
@@ -390,3 +390,1015 @@
         ty: i16
   response:
     opcode: 0xb3
+
+- name: GetBatteryPower
+  description: |
+    # 30/38 	Request
+
+    * void
+
+    Request the battery voltage from the RCX.
+
+    # c7/cf 	Reply
+
+    * ushort *millivolts* 	Battery voltage.
+
+    Reply indicates the current voltage of the RCX battery, in mV. A fresh set of alkaline batteries typically has a reading of around 9.3V.
+  request:
+    opcode: 0x30
+  response:
+    opcode: 0xc7
+    params:
+      - name: millivolts
+        ty: u16
+
+- name: GetMemoryMap
+  description: |
+    # 20/28 	Request
+
+    * void
+
+    Request the memory map from the RCX.
+
+    # d7/df 	Reply
+
+    * ushort *map[94]* 	Memory map.
+
+    Reply contains the user program memory map of the RCX. The memory map is an array of 94 16-bit big endian addresses, organized as follows:
+    ```text
+        Index 	Description
+        0-7 	Starting addresses, program 0, subroutines 0-7
+        8-15 	Starting addresses, program 1, subroutines 0-7
+        16-23 	Starting addresses, program 2, subroutines 0-7
+        24-31 	Starting addresses, program 3, subroutines 0-7
+        32-39 	Starting addresses, program 4, subroutines 0-7
+        40-49 	Starting addresses, program 0, tasks 0-9
+        50-59 	Starting addresses, program 1, tasks 0-9
+        60-69 	Starting addresses, program 2, tasks 0-9
+        70-79 	Starting addresses, program 3, tasks 0-9
+        80-89 	Starting addresses, program 4, tasks 0-9
+        90 	First datalog address
+        91 	Next datalog address
+        92 	First free address
+        93 	Last valid addesss
+    ```
+  request:
+    opcode: 0x20
+  response:
+    opcode: 0xd7
+    params:
+      - name: subroutine_addresses
+        ty: "[[u16; 8]; 5]"
+      - name: task_addresses
+        ty: [[u16; 10]; 5]
+      - name: datalog_addresses
+        ty: [u16; 2]
+      - name: first_free_address
+        ty: u16
+      - name: last_valid_address
+        ty: u16
+
+- name: GetValue
+  description: |
+    # 12/1a 	Request
+
+    * byte *source* 	Source type for value. Sources 2 and 4 not allowed.
+    * byte *argument* 	Argument for value.
+
+    Request the value specified by source and argument.
+
+    # e5/ed 	Reply
+
+    * short *value* 	Return value.
+
+    Reply contains the requested value.
+  request:
+    opcode: 0x12
+    params:
+      - name: source
+      - name: argument
+  response:
+    opcode: 0xe5
+    params:
+      - name: value
+        ty: i16
+
+- name: GetVersions
+  description: |
+    # 15/1d 	Request
+
+    * byte *key[5]* 	Key. Must be {1,3,5,7,11}.
+
+    Request the ROM and firmware versions from the RCX. If key is not valid, no reply is sent.
+
+    # e2/ea 	Reply
+
+    * short *rom[2]* 	ROM version number.
+    * short *firmware[2]* 	Firmware version number.
+
+    Reply contains the ROM and firmware version numbers. Each version number is composed of two big endian shorts; the first is the major version number and the second is the minor version number.
+
+    The ROM always has major and minor version numbers 3 and 1. The firmware shipped with the Robotics Invention System has major and minor version numbers 3 and 9. When no firmware is installed, both firmware version numbers are 0.
+  request:
+    opcode: 0x15
+    params:
+      - name: key
+        ty: [u8; 5]
+  response:
+    opcode: 0xe2
+    params:
+      - name: rom
+        ty: [i16; 2]
+      - name: firmware
+        ty: [i16; 2]
+
+- name: MultiplyVariable
+  description: |
+    # 54/5c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Multiply the value of variable index by the value specified by source and argument, and store the result in variable index.
+
+    # a3/ab 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x54
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0xa3
+
+- name: OrVariable
+  description: |
+    # 94/9c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Compute the logical OR of the value specified by source and argument and the value of variable index, and store the result in variable index.
+
+    # 63/6b 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x94
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0x63
+
+- name: PlaySound
+  description: |
+    # 51/59 	Request/Command
+
+    * byte *sound* 	Sound type. 0..5.
+
+    Play the specified sound.
+
+    There are six avaiable sound types:
+    ```text
+        Index	Description
+        0	Blip
+        1	Beep beep
+        2	Downward tones
+        3	Upward tones
+        4	Low buzz
+        5	Fast upward tones
+    ```
+
+    # a6/ae 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x51
+    params:
+      - name: sound
+  response:
+    opcode: 0xa6
+
+- name: PlayTone
+  description: |
+    # 23/2b 	Request/Command
+
+    * short *frequency* 	Tone frequency.
+    * byte *duration* 	Tone duration.
+
+    Play the sound specified by frequency and duration. The tone frequency is measured in Hz, and the tone duration is measured in 1/100ths of a second.
+
+    # d4/dc 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x23
+    params:
+      - name: frequency
+        ty: i16
+      - name: duration
+        ty: i8
+  response:
+    opcode: 0xd4
+
+- name: PowerOff
+  description: |
+    # 60/68 	Request/Command
+
+    * void
+
+    Turn off the RCX. If the power down delay is zero, do nothing.
+
+    # 97/9f 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x60
+  response:
+    opcode: 0x97
+
+- name: ReturnFromSubroutine
+  description: |
+    # f6/xx 	Command
+
+    * void
+
+    Return from subroutine. This opcode is intended to be used in the middle of a subroutine, since a return from subroutine opcode is automatically added to every subroutine that is downloaded.
+  request:
+    opcode: 0xf6
+    supports_alternate: false
+
+- name: SendMessage
+  description: |
+    # b2/xx 	Command
+
+    * byte *source* 	Source type for message. Only 0 and 2 allowed.
+    * byte *argument* 	Argument for message.
+
+    Send the value specified by source and argument to other RCX units. The value is sent by broadcasting a set message request over the infrared link.
+  request:
+    opcode: 0xb2
+    supports_alternate: false
+    params:
+      - name: source
+      - name: argument
+
+- name: SetDatalogSize
+  description: |
+    # 52/5a 	Request/Command
+
+    * short *size* 	New datalog size.
+
+    Allocate and initialize a datalog with space for size data entries. A single extra entry is always allocated to hold the current size of the datalog, which is initialized to one since this size value is stored as the first entry in the datalog.
+
+    # a5/ad 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, while a return value of 1 indicates that there is insufficient memory to allocate a datalog of the requested size.
+  request:
+    opcode: 0x52
+    params:
+      - name: size
+        ty: i16
+  response:
+    opcode: 0xa5
+    params:
+      - name: errorcode
+
+- name: SetDisplay
+  description: |
+    # 33/3b 	Request/Command
+
+    * byte *source* 	Source type for device. Only 0 and 2 allowed.
+    * short *argument* 	Argument for device.
+
+    Display the input/output value associated with the device specified by source and argument. Valid devices are:
+    ```text
+        Index	Description
+        0	Watch
+        1	Sensor 1
+        2	Sensor 2
+        3	Sensor 3
+        4	Motor A
+        5	Motor B
+        6	Motor C
+    ```
+
+    This operation controls the same functionality as the View button on the face of the RCX.
+
+    # c4/cc 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x33
+    params:
+      - name: source
+      - name: argument
+  response:
+    opcode: 0xc4
+
+- name: SetLoopCounter
+  description: |
+    # 82/xx 	Command
+
+    * byte *source* 	Source type for counter value. Only 0, 2, and 4 allowed.
+    * byte *argument* 	Argument for counter value.
+
+    Push the loop counter stack, then set the topmost loop counter to the value specified by source and argument. There are four loop counters. If more than four loops are nested, the loop counter stack is not pushed before the topmost value is set.
+  request:
+    opcode: 0x82
+    supports_alternate: false
+    params:
+      - name: source
+      - name: argument
+        ty: i8
+
+- name: SetMessage
+  description: |
+    # f7/xx 	Request/Command
+
+    * byte message 	Message value.
+
+    Set the value of the message buffer to message. This is the only request with no matching reply.
+  request:
+    opcode: 0xf7
+    params:
+      - name: message
+
+- name: SetMotorDirection
+  description: |
+    # e1/e9 	Request/Command
+
+    * byte code 	Bit field to specify a direction and up to three motors.
+
+    Set the direction of the motors according to code. The bits of code have the following meanings:
+    ```text
+        Bit	Description
+        0x01	Modify direction of motor A
+        0x02	Modify direction of motor B
+        0x04	Modify direction of motor C
+        0x40	Flip the directions of the specified motors
+        0x80	Set the directions of the specified motors to forward
+    ```
+
+    If both bit 0x40 and bit 0x80 are 0, the directions of the specified motors are set to reverse. If both bit 0x40 and bit 0x80 are 1, the directions of the specified motors are flipped.
+
+    # 16/1e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0xe1
+    params:
+      - name: code
+  response:
+    opcode: 0x16
+
+- name: SetMotorOnOff
+  description: |
+    # 21/29 	Request/Command
+
+    * byte code 	Bit field to specify an on/off state and up to three motors.
+
+    Set the on/off state of the motors according to code. The bits of code have the following meanings:
+    ```text
+        Bit	Description
+        0x01	Modify on/off state of motor A
+        0x02	Modify on/off state of motor B
+        0x04	Modify on/off state of motor C
+        0x40	Turn off the specified motors
+        0x80	Turn on the specified motors
+    ```
+
+    If both bit 0x40 and bit 0x80 are 0, the specified motors are set to float, which allows the shafts of the specified motors to spin freely. Setting both bit 0x40 and bit 0x80 to 1 turns on the specified motors.
+
+    # d6/de 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x21
+    params:
+      - name: code
+  response:
+    opcode: 0xd6
+
+- name: SetMotorPower
+  description: |
+    # 13/1b 	Request/Command
+
+    * byte *motors* 	Bit field to specify up to three motors.
+    * byte *source* 	Source type for power level. Only 0, 2, and 4 allowed.
+    * byte *argument* 	Argument for power level.
+
+    Set the power level of the motors specified by motors to the value specified by source and argument. The bits of motors have the following meanings:
+    ```text
+        Bit	Description
+        0x01	Modify power level of motor A
+        0x02	Modify power level of motor B
+        0x04	Modify power level of motor C
+    ```
+
+    Valid power levels are between 0 and 7, inclusive. Other power levels are ignored.
+
+    # e4/ec 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x13
+    params:
+      - name: motors
+      - name: source
+      - name: argument
+  response:
+    opcode: 0xe4
+
+- name: SetPowerDownDelay
+  description: |
+    # b1/b9 	Request/Command
+
+    * byte *minutes* 	Power down delay.
+
+    Set the power down delay to the specified value, which is measured in minutes. A power down delay of 0 instructs the RCX to remain on indefinitely and causes the power off opcode to be ignored.
+
+    # 46/4e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0xb1
+    params:
+      - name: minutes
+  response:
+    opcode: 0x46
+
+- name: SetProgramNumber
+  description: |
+    # 91/99 	Request/Command
+
+    * byte *program* 	Program number. 0..4.
+
+    Stop execution and set the current program number to the specified value.
+
+    # 66/6e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x91
+    params:
+      - name: program
+  response:
+    opcode: 0x66
+
+- name: SetSensorMode
+  description: |
+    # 42/4a 	Request/Command
+
+    * byte *sensor* 	Index of sensor to modify. 0..2.
+    * byte *code* 	Packed sensor slope and mode.
+
+    Set the slope and mode of sensor number sensor to the value specified by mode, and clear that sensor's value. The bits of mode are split into two portions. Bits 0-4 contain a slope value in 0..31, while bits 5-7 contain the mode, 0..7. The eight modes, which control the value returned by the sensor, are:
+    ```
+        Mode	Name	Description
+        0	Raw	Value in 0..1023.
+        1	Boolean	Either 0 or 1.
+        2	Edge count	Number of boolean transitions.
+        3	Pulse count	Number of boolean transitions divided by two.
+        4	Percentage	Raw value scaled to 0..100.
+        5	Temperature in °C	1/10ths of a degree, -19.8..69.5.
+        6	Temperature in °F	1/10ths of a degree, -3.6..157.1.
+        7	Angle	1/16ths of a rotation, represented as a signed short.
+    ```
+
+    The slope value controls 0/1 detection for the three boolean modes. A slope of 0 causes raw sensor values greater than 562 to cause a transition to 0 and raw sensor values less than 460 to cause a transition to 1. The hysteresis prevents bouncing between 0 and 1 near the transition point. A slope value in 1..31, inclusive, causes a transition to 0 or to 1 whenever the difference between consecutive raw sensor values exceeds the slope. Increases larger than the slope result in 0 transitions, while decreases larger than the slope result in 1 transitions. Note the inversions: high raw values correspond to a boolean 0, while low raw values correspond to a boolean 1.
+
+    # b5/bd 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x42
+    params:
+      - name: sensor
+      - name: code
+  response:
+    opcode: 0xb5
+
+- name: SetSensorType
+  description: |
+    # 32/3a 	Request/Command
+
+    * byte sensor 	Index of sensor to modify. 0..2.
+    * byte type 	Sensor type. 0..4.
+
+    Set the type of sensor number sensor to type, and set the mode of that sensor to a default value. Valid types and their default modes are:
+    ```text
+        Type	Description	Default Mode
+        0	Raw	Raw
+        1	Touch	Boolean
+        2	Temperature	Temperature in °C
+        3	Light	Percentage
+        4	Rotation	Angle
+    ```
+
+    # c5/cd 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x32
+    params:
+      - name: sensor
+      - name: type_
+  response:
+    opcode: 0xc5
+
+- name: SetTime
+  description: |
+    # 22/2a 	Request/Command
+
+    * byte *hours* 	Current hour. 0..23.
+    * byte *minutes* 	Current minute. 0..59.
+
+    Set the current time to hours and minutes.
+
+    # d5/dd 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x22
+    params:
+      - name: hours
+      - name: minutes
+  response:
+    opcodE: 0xd5
+
+- name: SetTransmitterRange
+  description: |
+    # 31/39 	Request/Command
+
+    * byte *range* 	Transmitter range. 0 or 1.
+
+    Set the transmitter range. 0 indicates short range, 1 indicates long range. Other values are ignored.
+
+    # c6/ce 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x31
+    params:
+      - name: range
+  response:
+    opcode: 0xc6
+
+- name: SetVariable
+  description: |
+    # 14/1c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. All sources are allowed.
+    * short *argument* 	Argument for second operand.
+
+    Set the value of variable index to the value specified by source and argument.
+
+    # e3/eb 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x14
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0xe3
+
+- name: SignVariable
+  description: |
+    # 64/6c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Set the value of variable index to 0 if the value specified by source and argument is equal to 0, 1 if the value specified by source and argument is positive, or -1 if the value specified by source and argument is negative.
+
+    # 93/9b 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x64
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0x93
+
+- name: StartFirmwareDownload
+  description: |
+    # 75/7d 	Request
+
+    * short *address* 	Firmware entry address. Typically 0x8000.
+    * short *checksum* 	Firmware checksum. Typically 0xc278.
+    * byte *unknown* 	Unknown or unused value. Always 0.
+
+    Prepare the RCX for a firmware download starting at address 0x8000. The checksum is computed by taking the sum of all firmware bytes modulo 216. The specified address is used as the firmware entry point when the firmware is unlocked.
+
+    If firmware is already installed, this request is ignored and no response is sent.
+
+    # 82/8a 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, while any other return value indicates failure.
+  request:
+    opcode: 0x75
+    params:
+      - name: address
+        ty: i16
+      - name: checksum
+        ty: i16
+      - name: unknown
+  response:
+    opcode: 0x82
+    params:
+      - name: errorcode
+
+- name: StartSubroutineDownload
+  description: |
+    # 35/3d 	Request
+
+    * byte *unknown* 	Unknown or unused value. Always 0.
+    * short *subroutine* 	Subroutine index. 0..7.
+    * short *length* 	Subroutine length.
+
+    Prepare the RCX for a download of subroutine number subroutine of the current program. Space for length bytes is allocated in the memory map by moving other data as needed.
+
+    # c2/ca 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, a return value of 1 indicates that there is insufficient memory for a subroutine of the requested size, and a return value of 2 indicates that the subroutine index was invalid.
+  request:
+    opcode: 0x35
+    params:
+      - name: unknown
+      - name: subroutine
+        ty: i16
+      - name: length
+        ty: i16
+  response:
+    opcode: 0xc2
+    params:
+      - name: errorcode
+
+- name: StartTask
+  description: |
+    # 71/79 	Request/Command
+
+    * byte *task* 	Index of task to start. 0..9.
+
+    Start the specified task, or restart it if it is currently active. If the specified task is not defined, nothing happens.
+
+    # 86/8e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x71
+    params:
+      - name: task
+  response:
+    opcode: 0x86
+
+- name: StartTaskDownload
+  description: |
+    # 25/2d 	Request
+
+    * byte *unknown* 	Unknown or unused value. Always 0.
+    * short *task* 	Task index. 0..9.
+    * short *length* 	Task length.
+
+    Prepare the RCX for a download of task number task of the current program. Space for length bytes is allocated in the memory map by moving other data as needed.
+
+    # d2/da 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, a return value of 1 indicates that there is insufficient memory for a task of the specified size, and a return value of 2 indicates that the task index was invalid.
+  request:
+    opcode: 0x25
+    params:
+      - name: unknown
+      - name: task
+        ty: i16
+      - name: length
+        ty: i16
+  response:
+    opcode: 0xd2
+
+- name: StopAllTasks
+  description: |
+    # 50/58 	Request/Command
+
+    * void
+
+    Stops execution.
+
+    # a7/af 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x50
+  response:
+    opcode: 0xa7
+
+- name: StopTask
+  description: |
+    # 81/89 	Request/Command
+
+    * byte task 	Index of task to stop. 0..9.
+
+    Stops execution of the specified task.
+
+    # 76/7e 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x81
+    params:
+      - name: task
+  response:
+    opcode: 0x76
+
+- name: SubtractFromVariable
+  description: |
+    # 34/3c 	Request/Command
+
+    * byte *index* 	Destination and first operand variable index. 0..31.
+    * byte *source* 	Source type for second operand. Only 0 and 2 allowed.
+    * short *argument* 	Argument for second operand.
+
+    Subtract the value specified by source and argument from the value of variable index, and store the result in variable index.
+
+    # c3/cb 	Reply
+
+    * void
+
+    Reply indicates success.
+  request:
+    opcode: 0x34
+    params:
+      - name: index
+      - name: source
+      - name: argument
+        ty: i16
+  response:
+    opcode: 0xc3
+
+- name: TestAndBranchFar
+  description: |
+    # 95/xx 	Command
+
+    * byte *opsrc1* 	Packed operator and source type for first value. Sources 4 and 8 not allowed.
+    * byte *src2* 	Source type for second value. Sources 2, 4, and 8 not allowed.
+    * short *arg1* 	Argument for first value.
+    * byte *arg2* 	Argument for second value.
+    * short *offset* 	Offset for computing branch target address.
+
+    Compare two values against one another and branch if the comparison is true. Bits 0-3 of opsrc1 contain the source for the first value, while arg1 contains the argument for the first value. The second value is specified by src2 and arg2. The comparison operator, which is stored in bits 6-7 of opsrc1, has a value in 0..3. The meanings of these values are:
+    ```text
+        Value	Description
+        0	First value less than or equal to second value
+        1	First value greater than or equal to second value
+        2	First value not equal to second value
+        3	First value equal to second value
+    ```
+
+    The branch target address is computed as:
+    ```text
+        address of first byte of offset + offset.
+    ```
+
+    Note that offset is signed. Backward branching is allowed with this operation.
+  request:
+    opcode: 0x95
+    supports_alternate: false
+    params:
+      - name: opsrc1
+      - name: src2
+      - name: arg1
+        ty: i16
+      - name: arg2
+        ty: i8
+      - name: offset
+        ty: i16
+
+- name: TestAndBranchNear
+  description: |
+    # 85/xx 	Command
+
+    * byte *opsrc1* 	Packed operator and source type for first value. Sources 4 and 8 not allowed.
+    * byte *src2* 	Source type for second value. Sources 2, 4, and 8 not allowed.
+    * short *arg1* 	Argument for first value.
+    * byte *arg2* 	Argument for second value.
+    * byte *offset* 	Offset for computing branch target address.
+
+    Compare two values against one another and branch if the comparison is true. Bits 0-3 of opsrc1 contain the source for the first value, while arg1 contains the argument for the first value. The second value is specified by src2 and arg2. The comparison operator, which is stored in bits 6-7 of opsrc1, has a value in 0..3. The meanings of these values are:
+    ```text
+        Value	Description
+        0	First value less than or equal to second value
+        1	First value greater than or equal to second value
+        2	First value not equal to second value
+        3	First value equal to second value
+    ```
+
+    The branch target address is computed as:
+    ```text
+        address of first byte of offset + offset.
+    ```
+
+    The value of offset is unsigned. Backward branching is not allowed with this operation. Use test and branch far to test and branch backward.
+  request:
+    opcode: 0x85
+    supports_alternate: false
+    params:
+      - name: opsrc1
+      - name: src2
+      - name: arg1
+        ty: i16
+      - name: arg2
+        ty: i8
+      - name: offset
+
+- name: TransferData
+  description: |
+    # 45/4d 	Request
+
+    * short *index* 	Sequence number of data block.
+    * short *length* 	Length of data block.
+    * byte *data[length]* 	Data block.
+    * byte *checksum* 	Checksum of data block.
+
+    Download block number index, containing length data bytes, to the RCX. The bytes are stored as required by the most recent start firmware download, start subroutine download, or start task download operation.
+
+    Block sequence numbers start at 1 and increase by one with each successive block transferred. The special sequence number 0 indicates the last block of a transfer. Once this sequence number is received by the RCX, another start download operation is required before additional data blocks may be transferred.
+
+    The checksum is computed by taking the sum of all bytes in the data block modulo 256. It is only checked for packets that have a non-zero sequence number.
+
+    Note that, for task and subroutine downloads, the RCX does not check that the total number of bytes sent was equal to the amount of space allocated by the corresponding start download operation. If too few bytes are sent, a portion of the downloaded task or subroutine will contain invalid code; if too many bytes are sent, other tasks and subroutines may become corrupted.
+
+    # b2/ba 	Reply
+
+    * byte *errorcode* 	Return value.
+
+    A return value of 0 indicates success, a return value of 3 indicates a block checksum failure, a return value of 4 indicates a firmware checksum error, and a return value of 6 indicates an invalid or missing download start. If the block sequence number is out of order, no reply is sent.
+
+    When block checksum error number 3 is received, the PC may either retransmit the erroneous block or restart the download. A block with index 0 cannot be retransmitted. Moreover, a bug in the ROM requires that the PC increment its block sequence number when retransmitting firmware data in response to a block checksum error.
+
+    During a firmware download, duplicate transfer data requests are handled incorrectly. If the PC does not receive a transfer data reply, block sequence numbers might get out of sync.
+  request:
+    opcode: 0x45
+    params:
+      - name: index
+        ty: i16
+      - name: length
+        ty: i16
+      - name: data
+        ty: [u8; 256]
+      - name: checksum
+  response:
+    opcode: 0xb2
+    params:
+      - name: errorcode
+
+- name: UnlockFirmware
+  description: |
+    # a5/ad 	Request
+
+    * byte *key[5]* 	Key. Must be {76,69,71,79,174} = {"LEGO®"}.
+
+    Activate the firmware after a successful download.
+
+    # 52/5a 	Reply
+
+    * byte *data[25]* 	Return value. Always {"Just a bit off the block!"}.
+
+    Reply indicates success.
+  request:
+    opcode: 0xa5
+    params:
+      - name: key
+        ty: [u8; 5]
+  response:
+    opcode: 0x52
+    params:
+      - name: data
+        ty: [u8; 25]
+
+- name: UploadDatalog
+  description: |
+    # a4/ac 	Request
+
+    * short *first* 	Index of first entry to upload.
+    * short *count* 	Number of entries to upload.
+
+    Upload count datalog entries, starting with entry number first.
+
+    The datalog entry with index 0 always contains the current size of the datalog, which is guaranteed to be at least one since the current size entry is considered to be part of the datalog. After the current size entry are size data entries, where size is specified with the set datalog size operation and is initially zero.
+
+    It is an error to read an entry outside the valid range of the datalog.
+
+    # 53/5b 	Reply
+
+    * dlrec *data[length]* 	Requested datalog entries.
+
+    Reply contains the requested datalog entries, stored as an array of length dlrec duples, where length was specified as the count in the corresponding request. Each dlrec is organized as follows:
+
+        * byte type 	Type of datalog entry.
+        * short value 	Value of datalog entry.
+
+    The type of each dlrec specifies the appropriate interpretation of the corresponding value. Valid types are:
+
+        Type	Description
+        0xff	Current datalog size
+        0x00-0x1f	Variable value (source 0, variables 0..31)
+        0x20-0x23	Timer value (source 1, timers 0..3)
+        0x40-0x42	Sensor reading (source 9, sensors 0..2)
+        0x80	Clock reading (source 14)
+
+    If an error occurs while reading the datalog, length is set to zero.
+  request:
+    opcode: 0xa4
+    params:
+      - name: first
+        ty: i16
+      - name: count
+        ty: i16
+  response:
+    opcode: 0x53
+    params:
+      - name: data
+        ty: [u8; 256]
+
+- name: Wait
+  description: |
+    # 43/xx 	Command
+
+    * byte *source* 	Source type for delay. Only 0, 2, and 4 allowed.
+    * short *argument* 	Argument for delay.
+
+    Wait for the delay specified by source and argument. The delay is in 1/100ths of a second.
+  request:
+    opcode: 0x43
+    supports_alternate: false
+    params:
+      - name: source
+      - name: argument
+        ty: i16
