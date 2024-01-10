@@ -307,7 +307,7 @@
   description: |
     # 65/6d 	Request/Command
 
-    * byte *key[5]* 	Key. Must be {1,3,5,7,11}.
+    * byte *key\[5\]* 	Key. Must be {1,3,5,7,11}.
 
     If key is valid, stop execution and delete the firmware. Otherwise, do nothing. The key prevents the firmware from being accidentally erased.
 
@@ -422,7 +422,7 @@
 
     # d7/df 	Reply
 
-    * ushort *map[94]* 	Memory map.
+    * ushort *map\[94\]* 	Memory map.
 
     Reply contains the user program memory map of the RCX. The memory map is an array of 94 16-bit big endian addresses, organized as follows:
     ```text
@@ -450,9 +450,9 @@
       - name: subroutine_addresses
         ty: "[[u16; 8]; 5]"
       - name: task_addresses
-        ty: [[u16; 10]; 5]
+        ty: "[[u16; 10]; 5]"
       - name: datalog_addresses
-        ty: [u16; 2]
+        ty: "[u16; 2]"
       - name: first_free_address
         ty: u16
       - name: last_valid_address
@@ -487,14 +487,14 @@
   description: |
     # 15/1d 	Request
 
-    * byte *key[5]* 	Key. Must be {1,3,5,7,11}.
+    * byte *key\[5\]* 	Key. Must be {1,3,5,7,11}.
 
     Request the ROM and firmware versions from the RCX. If key is not valid, no reply is sent.
 
     # e2/ea 	Reply
 
-    * short *rom[2]* 	ROM version number.
-    * short *firmware[2]* 	Firmware version number.
+    * short *rom\[2\]* 	ROM version number.
+    * short *firmware\[2\]* 	Firmware version number.
 
     Reply contains the ROM and firmware version numbers. Each version number is composed of two big endian shorts; the first is the major version number and the second is the minor version number.
 
@@ -503,14 +503,14 @@
     opcode: 0x15
     params:
       - name: key
-        ty: [u8; 5]
+        ty: "[u8; 5]"
   response:
     opcode: 0xe2
     params:
       - name: rom
-        ty: [i16; 2]
+        ty: "[i16; 2]"
       - name: firmware
-        ty: [i16; 2]
+        ty: "[i16; 2]"
 
 - name: MultiplyVariable
   description: |
@@ -886,7 +886,7 @@
     * byte *code* 	Packed sensor slope and mode.
 
     Set the slope and mode of sensor number sensor to the value specified by mode, and clear that sensor's value. The bits of mode are split into two portions. Bits 0-4 contain a slope value in 0..31, while bits 5-7 contain the mode, 0..7. The eight modes, which control the value returned by the sensor, are:
-    ```
+    ```text
         Mode	Name	Description
         0	Raw	Value in 0..1023.
         1	Boolean	Either 0 or 1.
@@ -963,7 +963,7 @@
       - name: hours
       - name: minutes
   response:
-    opcodE: 0xd5
+    opcode: 0xd5
 
 - name: SetTransmitterRange
   description: |
@@ -1283,7 +1283,7 @@
 
     * short *index* 	Sequence number of data block.
     * short *length* 	Length of data block.
-    * byte *data[length]* 	Data block.
+    * byte *data\[length\]* 	Data block.
     * byte *checksum* 	Checksum of data block.
 
     Download block number index, containing length data bytes, to the RCX. The bytes are stored as required by the most recent start firmware download, start subroutine download, or start task download operation.
@@ -1311,7 +1311,7 @@
       - name: length
         ty: i16
       - name: data
-        ty: [u8; 256]
+        ty: "[u8; 256]"
       - name: checksum
   response:
     opcode: 0xb2
@@ -1322,25 +1322,25 @@
   description: |
     # a5/ad 	Request
 
-    * byte *key[5]* 	Key. Must be {76,69,71,79,174} = {"LEGO®"}.
+    * byte *key\[5\]* 	Key. Must be {76,69,71,79,174} = {"LEGO®"}.
 
     Activate the firmware after a successful download.
 
     # 52/5a 	Reply
 
-    * byte *data[25]* 	Return value. Always {"Just a bit off the block!"}.
+    * byte *data\[25\]* 	Return value. Always {"Just a bit off the block!"}.
 
     Reply indicates success.
   request:
     opcode: 0xa5
     params:
       - name: key
-        ty: [u8; 5]
+        ty: "[u8; 5]"
   response:
     opcode: 0x52
     params:
       - name: data
-        ty: [u8; 25]
+        ty: "[u8; 25]"
 
 - name: UploadDatalog
   description: |
@@ -1357,21 +1357,23 @@
 
     # 53/5b 	Reply
 
-    * dlrec *data[length]* 	Requested datalog entries.
+    * dlrec *data\[length\]* 	Requested datalog entries.
 
     Reply contains the requested datalog entries, stored as an array of length dlrec duples, where length was specified as the count in the corresponding request. Each dlrec is organized as follows:
-
+    ```text
         * byte type 	Type of datalog entry.
         * short value 	Value of datalog entry.
+    ```
 
     The type of each dlrec specifies the appropriate interpretation of the corresponding value. Valid types are:
-
+    ```text
         Type	Description
         0xff	Current datalog size
         0x00-0x1f	Variable value (source 0, variables 0..31)
         0x20-0x23	Timer value (source 1, timers 0..3)
         0x40-0x42	Sensor reading (source 9, sensors 0..2)
         0x80	Clock reading (source 14)
+    ```
 
     If an error occurs while reading the datalog, length is set to zero.
   request:
@@ -1385,7 +1387,7 @@
     opcode: 0x53
     params:
       - name: data
-        ty: [u8; 256]
+        ty: "[u8; 256]"
 
 - name: Wait
   description: |
