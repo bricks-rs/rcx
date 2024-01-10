@@ -15,11 +15,21 @@ pub struct {{ opcode.name }}Response {
 }
 {% endif %}
 
-impl {{ opcode.name }} {
-    pub const REQUEST:u8 = {{ opcode.request.opcode|hex }};
-{% if let Some(response) = opcode.response %}
-    pub const RESPONSE:u8 = {{ response.opcode|hex}};
-{% endif %}
+impl Opcode for {{ opcode.name }} {
+    fn request_opcode(&self) -> u8 {
+        {{ opcode.request.opcode|hex }}
+    }
+    fn response_opcode(&self) -> Option<u8> {
+    {% if let Some(response) = opcode.response %}
+        Some({{ response.opcode|hex}})
+    {% else %}
+        None
+    {% endif %}
+    }
+    fn serialise(&self, buf: &mut [u8]) -> Result<usize> {
+        Ok(0)
+    }
+
 }
 
 {% endfor %}

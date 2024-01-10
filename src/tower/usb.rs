@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{opcodes::Opcode, IrTower, Result};
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Write},
@@ -16,8 +16,13 @@ impl UsbTower {
         let device = OpenOptions::new().read(true).write(true).open(device)?;
         Ok(Self { device })
     }
+}
 
-    pub fn send(&mut self, msg: &[u8]) -> Result<()> {
+impl IrTower for UsbTower {
+    fn send(&mut self, msg: &dyn Opcode) -> Result<()> {
+        let mut buf = [0; 50];
+        let msg = msg.serialise(&mut buf)?;
+        let msg = &buf[..msg];
         let mut buf = Vec::<u8>::new();
         buf.extend_from_slice(&HEADER);
         let mut sum = 0u8;
@@ -36,7 +41,7 @@ impl UsbTower {
         Ok(())
     }
 
-    pub fn recv(&mut self) -> Result<Vec<u8>> {
+    fn recv(&mut self) -> Result<Vec<u8>> {
         let mut buf = Vec::new();
         self.device.read_to_end(&mut buf)?;
         Ok(buf)

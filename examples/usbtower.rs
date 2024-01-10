@@ -1,4 +1,4 @@
-use rcx::usbtower::UsbTower;
+use rcx::tower::usb::UsbTower;
 
 const DEVICE: &str = "/dev/usb/legousbtower0";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
