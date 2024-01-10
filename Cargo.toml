@@ -9,8 +9,16 @@ description = "Communicate with LEGO RCX bricks"
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[example]]
+name = "usbtower"
+required-features = ["usbtower"]
+
+[features]
+default = ["usbtower"]
+usbtower = []
 
 [dependencies]
+thiserror = "1.0.56"
 
 [build-dependencies]
 askama = "0.12"
