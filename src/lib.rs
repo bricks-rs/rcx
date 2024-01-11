@@ -1,5 +1,32 @@
 pub mod opcodes {
     use crate::Result;
+    use std::io::{self, Write};
+
+    trait WriteParam {
+        fn write_param(&self, buf: impl Write) -> io::Result<()>;
+    }
+
+    macro_rules! writeparamimpl {
+        ($ty:ty) => {
+            impl WriteParam for $ty {
+                fn write_param(&self, mut buf: impl Write) -> io::Result<()> {
+                    buf.write_all(&self.to_be_bytes())
+                }
+            }
+        };
+    }
+
+    writeparamimpl!(u8);
+    writeparamimpl!(i8);
+    writeparamimpl!(u16);
+    writeparamimpl!(i16);
+
+    impl<const N: usize> WriteParam for [u8; N] {
+        fn write_param(&self, mut buf: impl Write) -> io::Result<()> {
+            buf.write_all(self)
+        }
+    }
+
     pub trait Opcode {
         fn request_opcode(&self) -> u8;
         fn response_opcode(&self) -> Option<u8>;

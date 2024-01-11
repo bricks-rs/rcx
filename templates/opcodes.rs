@@ -27,7 +27,12 @@ impl Opcode for {{ opcode.name }} {
     {% endif %}
     }
     fn serialise(&self, buf: &mut [u8]) -> Result<usize> {
-        Ok(0)
+        #[allow(unused_mut)]
+        let mut cursor = std::io::Cursor::new(buf);
+        {% for param in opcode.request.params %}
+        self.{{ param.name }}.write_param(&mut cursor)?;
+        {% endfor %}
+        Ok(cursor.position().try_into()?)
     }
 
 }
