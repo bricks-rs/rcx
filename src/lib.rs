@@ -10,7 +10,7 @@ pub mod opcodes {
         ($ty:ty) => {
             impl WriteParam for $ty {
                 fn write_param(&self, mut buf: impl Write) -> io::Result<()> {
-                    buf.write_all(&self.to_be_bytes())
+                    buf.write_all(&self.to_le_bytes())
                 }
             }
         };
@@ -39,6 +39,7 @@ pub mod tower;
 
 mod errors;
 pub use errors::{Error, Result};
+mod enums;
 
 use tower::IrTower;
 
