@@ -11,11 +11,12 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[example]]
 name = "usbtower"
-required-features = ["usbtower"]
+required-features = ["examples"]
 
 [features]
 default = ["usbtower"]
 usbtower = []
+examples = ["usbtower"]
 
 [dependencies]
 thiserror = "1.0.56"

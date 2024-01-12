@@ -38,12 +38,12 @@ pub enum SourceType {
 
 /// Motor state is encoded as a single byte. Bits 0-2 contain the motor
 /// power, 0..7. The remaining bits are used as follows:
-/// ```text`
+/// ```text
 /// Bit	Description	Notes
 /// 0x08	Forward flag	0 if forward, 1 if reverse.
 /// 0x40	Off flag	1 if off.
 /// 0x80	On flag	1 if on.
-///````
+///```
 /// If both bit 0x40 and bit 0x80 are 0, the specified motor is set to
 /// float.
 pub struct MotorState {

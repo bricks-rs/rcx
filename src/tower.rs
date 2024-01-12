@@ -3,7 +3,7 @@ pub mod usb;
 
 use crate::{opcodes::Opcode, Result};
 
-pub trait IrTower {
+pub trait IrTower: Send {
     fn send(&mut self, msg: &dyn Opcode) -> Result<()>;
     fn recv(&mut self) -> Result<Vec<u8>>;
 

@@ -2,12 +2,14 @@
 
 {% for opcode in opcodes %}
 #[doc=r#"{{ opcode.description }}"#]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct {{ opcode.name }} {
     {% for param in opcode.request.params %}
     pub {{ param.name }}: {{ param.ty }},
     {% endfor %}
 }
 {% if let Some(response) = opcode.response %}
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct {{ opcode.name }}Response {
     {% for param in response.params %}
     pub {{ param.name }}: {{ param.ty }},

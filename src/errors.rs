@@ -7,4 +7,10 @@ pub enum Error {
 
     #[error("Integer conversion error: {0}")]
     IntConversion(#[from] std::num::TryFromIntError),
+
+    #[error("Path is not a chardev")]
+    NotChardev,
+
+    #[error("Timeout was reached")]
+    Timeout,
 }
