@@ -13,4 +13,7 @@ pub enum Error {
 
     #[error("Timeout was reached")]
     Timeout,
+
+    #[error("Checksum mismatch")]
+    Checksum,
 }

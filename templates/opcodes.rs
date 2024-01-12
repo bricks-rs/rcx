@@ -8,14 +8,6 @@ pub struct {{ opcode.name }} {
     pub {{ param.name }}: {{ param.ty }},
     {% endfor %}
 }
-{% if let Some(response) = opcode.response %}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct {{ opcode.name }}Response {
-    {% for param in response.params %}
-    pub {{ param.name }}: {{ param.ty }},
-    {% endfor %}
-}
-{% endif %}
 
 impl Opcode for {{ opcode.name }} {
     fn request_opcode(&self) -> u8 {
@@ -30,13 +22,61 @@ impl Opcode for {{ opcode.name }} {
     }
     fn serialise(&self, buf: &mut [u8]) -> Result<usize> {
         #[allow(unused_mut)]
-        let mut cursor = std::io::Cursor::new(buf);
+        let mut cursor = Cursor::new(buf);
         {% for param in opcode.request.params %}
         self.{{ param.name }}.write_param(&mut cursor)?;
         {% endfor %}
         Ok(cursor.position().try_into()?)
     }
-
 }
+
+
+{% if let Some(response) = opcode.response %}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct {{ opcode.name }}Response {
+    {% for param in response.params %}
+    pub {{ param.name }}: {{ param.ty }},
+    {% endfor %}
+}
+
+impl {{ opcode.name }}Response {
+    pub fn deserialise(buf: &[u8]) -> Result<Self> {
+        let mut cursor = Cursor::new(buf);
+
+        // skip header bytes
+        loop {
+            let mut byte=[0];
+            cursor.read_exact(&mut byte)?;
+            if !is_header(byte[0]) {
+                cursor.seek(SeekFrom::Current(-1))?;
+                break;
+            }
+        }
+
+
+        // read & verify opcode
+        let opcode = u8::read_param(&mut cursor)?;
+        dbg!(opcode);
+        let mut checksum = opcode;
+
+
+        // parse out fields
+        {% for param in response.params %}
+        let {{ param.name }} =
+            <{{ param.ty }} as ReadParam>::read_param(&mut cursor)?;
+        {% endfor %}
+
+        // validate checksum
+        let checksum = u8::read_param(&mut cursor)?;
+        dbg!(checksum);
+
+        Ok(Self {
+            {% for param in response.params %}
+            {{ param.name }},
+            {% endfor %}
+        })
+    }
+}
+{% endif %}
 
 {% endfor %}
