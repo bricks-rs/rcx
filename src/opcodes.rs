@@ -52,7 +52,6 @@ macro_rules! readparamimpl {
                 // deduplicate the complements
                 let mut bytes = [0; BYTES];
                 for idx in 0..BYTES {
-                    dbg!(idx);
                     bytes[idx] = double_bytes[2 * idx];
                     if bytes[idx] != !double_bytes[2 * idx + 1] {
                         println!(

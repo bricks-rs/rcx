@@ -1,25 +1,30 @@
 use rcx::{
     opcodes::PlaySound,
     tower::{usb::UsbTower, IrTower},
-    Rcx,
+    MotorSelection, Rcx, Sound, SourceType,
 };
 
 const DEVICE: &str = "/dev/usb/legousbtower0";
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
     let mut rcx = UsbTower::open(DEVICE)?;
-
-    // let msg = PlaySound { sound: 1 };
-    // dbg!(rcx.send(&msg)?);
-
-    // let resp = rcx.recv();
-    // println!("resp: {resp:02x?}");
 
     let mut rcx = Rcx::new(rcx);
 
-    dbg!(rcx.alive());
+    // dbg!(rcx.alive());
+    // dbg!(rcx.get_battery_power());
+    // dbg!(rcx.get_value(SourceType::SensorValue, 1));
+    // println!("{}", rcx.get_versions()?);
+    // rcx.play_sound(Sound::FastUpwardTones)?;
+    // rcx.play_tone(440, 50)?;
+    // rcx.power_off();
 
-    dbg!(rcx.get_battery_power());
+    rcx.set_motor_direction(MotorSelection::A, rcx::MotorDirection::Forward)?;
+    rcx.set_motor_power(MotorSelection::A, 5)?;
+    rcx.set_motor_on_off(MotorSelection::A, rcx::MotorPowerState::On)?;
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    rcx.set_motor_on_off(MotorSelection::A, rcx::MotorPowerState::Float)?;
 
     Ok(())
 }

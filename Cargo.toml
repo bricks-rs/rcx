@@ -16,10 +16,12 @@ required-features = ["examples"]
 [features]
 default = ["usbtower"]
 usbtower = []
-examples = ["usbtower"]
+examples = ["usbtower", "dep:color-eyre"]
 
 [dependencies]
 thiserror = "1.0.56"
+
+color-eyre = { version = "0.6", optional = true }
 
 [build-dependencies]
 askama = "0.12"

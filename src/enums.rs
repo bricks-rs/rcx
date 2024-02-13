@@ -1,3 +1,5 @@
+use std::ops::BitOr;
+
 use crate::Error;
 
 /// This section describes the available sources and arguments.
@@ -52,11 +54,13 @@ pub struct MotorState {
     pub state: MotorPowerState,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MotorDirection {
     Forward,
     Reverse,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MotorPowerState {
     On,
     Off,
@@ -91,4 +95,75 @@ impl TryFrom<u8> for MotorState {
             state,
         })
     }
+}
+
+/**
+There are six avaiable sound types:
+```text
+    Index	Description
+    0	Blip
+    1	Beep beep
+    2	Downward tones
+    3	Upward tones
+    4	Low buzz
+    5	Fast upward tones
+```
+*/
+#[repr(u8)]
+pub enum Sound {
+    Blip = 0,
+    BeepBeep = 1,
+    DownwardTones = 2,
+    UpwardTones = 3,
+    LowBuzz = 4,
+    FastUpwardTones = 5,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct MotorSelection {
+    pub(crate) bitfield: u8,
+}
+
+impl MotorSelection {
+    pub const A: Self = Self { bitfield: 0x01 };
+    pub const B: Self = Self { bitfield: 0x02 };
+    pub const C: Self = Self { bitfield: 0x04 };
+}
+
+impl BitOr for MotorSelection {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self {
+            bitfield: self.bitfield | rhs.bitfield,
+        }
+    }
+}
+
+/**
+    Set the slope and mode of sensor number sensor to the value specified by mode, and clear that sensor's value. The bits of mode are split into two portions. Bits 0-4 contain a slope value in 0..31, while bits 5-7 contain the mode, 0..7. The eight modes, which control the value returned by the sensor, are:
+    ```text
+        Mode	Name	Description
+        0	Raw	Value in 0..1023.
+        1	Boolean	Either 0 or 1.
+        2	Edge count	Number of boolean transitions.
+        3	Pulse count	Number of boolean transitions divided by two.
+        4	Percentage	Raw value scaled to 0..100.
+        5	Temperature in °C	1/10ths of a degree, -19.8..69.5.
+        6	Temperature in °F	1/10ths of a degree, -3.6..157.1.
+        7	Angle	1/16ths of a rotation, represented as a signed short.
+    ```
+
+    The slope value controls 0/1 detection for the three boolean modes. A slope of 0 causes raw sensor values greater than 562 to cause a transition to 0 and raw sensor values less than 460 to cause a transition to 1. The hysteresis prevents bouncing between 0 and 1 near the transition point. A slope value in 1..31, inclusive, causes a transition to 0 or to 1 whenever the difference between consecutive raw sensor values exceeds the slope. Increases larger than the slope result in 0 transitions, while decreases larger than the slope result in 1 transitions. Note the inversions: high raw values correspond to a boolean 0, while low raw values correspond to a boolean 1.
+*/
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum SensorMode {
+    Raw = 0,
+    Boolean,
+    EdgeCount,
+    PulseCount,
+    Percentage,
+    TemperatureC,
+    TemperatureF,
+    Angle,
 }

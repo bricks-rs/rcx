@@ -16,4 +16,7 @@ pub enum Error {
 
     #[error("Checksum mismatch")]
     Checksum,
+
+    #[error("Invalid data: {0}")]
+    InvalidData(&'static str),
 }

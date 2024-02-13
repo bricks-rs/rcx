@@ -9,10 +9,12 @@ use std::{
 
 const HEADER: [u8; 2] = [0x55, 0xff];
 const READ_TIMEOUT: Duration = Duration::from_secs(1);
+const TX_SEPARATION: Duration = Duration::from_millis(300);
 
 pub struct UsbTower {
     device: File,
     use_alternate_opcode: bool,
+    last_tx: Instant,
 }
 
 impl UsbTower {
@@ -28,6 +30,7 @@ impl UsbTower {
         Ok(Self {
             device,
             use_alternate_opcode: false,
+            last_tx: Instant::now(),
         })
     }
 }
@@ -61,8 +64,15 @@ impl IrTower for UsbTower {
 
         println!("send: {buf:02x?}");
 
+        // Enforce a minimum time separation between transmissions to
+        // avoid confusing the RCX
+        while self.last_tx.elapsed() < TX_SEPARATION {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+
         self.device.write_all(&buf)?;
         self.device.flush()?;
+        self.last_tx = Instant::now();
         Ok(())
     }
 
