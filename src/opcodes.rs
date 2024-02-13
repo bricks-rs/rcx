@@ -47,7 +47,7 @@ macro_rules! readparamimpl {
                 let mut double_bytes = [0; BYTES * 2];
                 buf.read_exact(&mut double_bytes)?;
 
-                println!("bytes: {:02x?}", double_bytes);
+                println!("parse: {:02x?}", double_bytes);
 
                 // deduplicate the complements
                 let mut bytes = [0; BYTES];

@@ -59,17 +59,19 @@ impl IrTower for UsbTower {
         buf.push(sum);
         buf.push(!sum);
 
-        println!("{buf:02x?}");
+        println!("send: {buf:02x?}");
 
         self.device.write_all(&buf)?;
+        self.device.flush()?;
         Ok(())
     }
 
     fn recv(&mut self) -> Result<Vec<u8>> {
-        let mut buf = Vec::new();
+        let mut buf = vec![0; 256];
         let now = Instant::now();
         while now.elapsed() < READ_TIMEOUT {
-            if let Ok(len) = self.device.read_to_end(&mut buf) {
+            if let Ok(len) = self.device.read(&mut buf) {
+                buf.truncate(len);
                 return Ok(buf);
             }
         }
