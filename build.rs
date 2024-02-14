@@ -19,6 +19,7 @@ const fn true_() -> bool {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct Opcode {
     name: String,
     description: String,
@@ -31,6 +32,7 @@ struct Opcode {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct Context {
     #[serde(default)]
     request: bool,

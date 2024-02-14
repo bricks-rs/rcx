@@ -53,28 +53,32 @@ impl {{ opcode.name }}Response {
             }
         }
 
-
         // read & verify opcode
         let opcode = u8::read_param(&mut cursor)?;
-        dbg!(opcode);
-        let mut checksum = opcode;
 
+        // not every opcode will write to the checksum
+        #[allow(unused_mut)]
+        let mut checksum = opcode;
 
         // parse out fields
         {% for param in response.params %}
         let {{ param.name }} =
             <{{ param.ty }} as ReadParam>::read_param(&mut cursor)?;
+        {{ param.name }}.add_to_checksum(&mut checksum);
         {% endfor %}
 
         // validate checksum
-        let checksum = u8::read_param(&mut cursor)?;
-        dbg!(checksum);
+        let pkt_checksum = u8::read_param(&mut cursor)?;
 
-        Ok(Self {
-            {% for param in response.params %}
-            {{ param.name }},
-            {% endfor %}
-        })
+        if checksum == pkt_checksum {
+            Ok(Self {
+                {% for param in response.params %}
+                {{ param.name }},
+                {% endfor %}
+            })
+        } else {
+            Err(Error::Checksum)
+        }
     }
 }
 {% endif %}

@@ -74,6 +74,34 @@ readparamimpl!(i8);
 readparamimpl!(u16);
 readparamimpl!(i16);
 
+trait AddToChecksum {
+    fn add_to_checksum(&self, checksum: &mut u8);
+}
+
+macro_rules! add_to_checksum_impl {
+    ($ty:ty) => {
+        impl AddToChecksum for $ty {
+            fn add_to_checksum(&self, checksum: &mut u8) {
+                for byte in self.to_be_bytes() {
+                    *checksum = checksum.wrapping_add(byte);
+                }
+            }
+        }
+    };
+}
+
+add_to_checksum_impl!(u8);
+add_to_checksum_impl!(u16);
+add_to_checksum_impl!(i16);
+
+impl<const N: usize, T: AddToChecksum> AddToChecksum for [T; N] {
+    fn add_to_checksum(&self, checksum: &mut u8) {
+        for ele in self {
+            ele.add_to_checksum(checksum);
+        }
+    }
+}
+
 impl<const N: usize, T: ReadParam + Default + Copy> ReadParam for [T; N] {
     fn read_param(buf: &mut impl Read) -> Result<Self>
     where

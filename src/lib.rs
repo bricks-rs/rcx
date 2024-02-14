@@ -8,7 +8,6 @@ mod errors;
 pub use enums::*;
 pub use errors::{Error, Result};
 
-use opcodes::{StartSubroutineDownloadResponse, TransferDataResponse};
 use tower::IrTower;
 
 pub struct Rcx {
@@ -222,7 +221,7 @@ impl Rcx {
         &mut self,
         subroutine: i16,
         length: i16,
-    ) -> Result<StartSubroutineDownloadResponse> {
+    ) -> Result<opcodes::StartSubroutineDownloadResponse> {
         if subroutine > 7 {
             return Err(Error::InvalidData("Subroutine must be 0-7"));
         }
