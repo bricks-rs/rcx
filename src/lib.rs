@@ -8,6 +8,7 @@ mod errors;
 pub use enums::*;
 pub use errors::{Error, Result};
 
+use opcodes::{StartSubroutineDownloadResponse, TransferDataResponse};
 use tower::IrTower;
 
 pub struct Rcx {
@@ -168,5 +169,129 @@ impl Rcx {
             code: mode as u8,
         })?;
         Ok(())
+    }
+
+    pub fn set_sensor_type(
+        &mut self,
+        sensor: u8,
+        ty: SensorType,
+    ) -> Result<()> {
+        if sensor > 2 {
+            return Err(Error::InvalidData("Sensor index must be 0-2"));
+        }
+        self.tower.send_recv(&opcodes::SetSensorType {
+            sensor,
+            type_: ty as u8,
+        })?;
+        Ok(())
+    }
+
+    pub fn set_time(&mut self, hours: u8, minutes: u8) -> Result<()> {
+        if hours > 23 || minutes > 59 {
+            return Err(Error::InvalidData(
+                "Hours must be 0-23 and minutes must be 0-59",
+            ));
+        }
+        self.tower.send_recv(&opcodes::SetTime { hours, minutes })?;
+        Ok(())
+    }
+
+    pub fn set_transmitter_range(
+        &mut self,
+        range: TransmitterRange,
+    ) -> Result<()> {
+        self.tower
+            .send_recv(&opcodes::SetTransmitterRange { range: range as u8 })?;
+        Ok(())
+    }
+
+    pub fn start_firmware_download(
+        &mut self,
+        address: i16,
+        checksum: i16,
+    ) -> Result<opcodes::StartFirmwareDownloadResponse> {
+        let resp = self.tower.send_recv(&opcodes::StartFirmwareDownload {
+            address,
+            checksum,
+            unknown: 0,
+        })?;
+        opcodes::StartFirmwareDownloadResponse::deserialise(&resp)
+    }
+
+    pub fn start_subroutine_download(
+        &mut self,
+        subroutine: i16,
+        length: i16,
+    ) -> Result<StartSubroutineDownloadResponse> {
+        if subroutine > 7 {
+            return Err(Error::InvalidData("Subroutine must be 0-7"));
+        }
+        let resp = self.tower.send_recv(&opcodes::StartSubroutineDownload {
+            unknown: 0,
+            subroutine,
+            length,
+        })?;
+        opcodes::StartSubroutineDownloadResponse::deserialise(&resp)
+    }
+
+    pub fn start_task(&mut self, task: u8) -> Result<()> {
+        if task > 9 {
+            return Err(Error::InvalidData("Task must be 0-9"));
+        }
+        self.tower.send_recv(&opcodes::StartTask { task })?;
+        Ok(())
+    }
+
+    pub fn start_task_download(&mut self, task: u8, length: i16) -> Result<()> {
+        if task > 9 {
+            return Err(Error::InvalidData("Task must be 0-9"));
+        }
+        self.tower.send_recv(&opcodes::StartTaskDownload {
+            unknown: 0,
+            task: i16::from(task),
+            length,
+        })?;
+        Ok(())
+    }
+
+    pub fn stop_all_tasks(&mut self) -> Result<()> {
+        self.tower.send_recv(&opcodes::StopAllTasks {})?;
+        Ok(())
+    }
+
+    pub fn stop_task(&mut self, task: u8) -> Result<()> {
+        if task > 9 {
+            return Err(Error::InvalidData("Task must be 0-9"));
+        }
+        self.tower.send_recv(&opcodes::StopTask { task })?;
+        Ok(())
+    }
+
+    pub fn transfer_data(
+        &mut self,
+        index: i16,
+        length: i16,
+        data: [u8; 256],
+        checksum: u8,
+    ) -> Result<opcodes::TransferDataResponse> {
+        let resp = self.tower.send_recv(&opcodes::TransferData {
+            index,
+            length,
+            data,
+            checksum,
+        })?;
+        opcodes::TransferDataResponse::deserialise(&resp)
+    }
+
+    pub fn unlock_firmware(&mut self) -> Result<()> {
+        let resp = self
+            .tower
+            .send_recv(&opcodes::UnlockFirmware { key: *b"LEGO\xae" })?;
+        let resp = opcodes::UnlockFirmwareResponse::deserialise(&resp)?;
+        if &resp.data == b"Just a bit off the block!" {
+            Ok(())
+        } else {
+            Err(Error::RcxError("Unexpected response from brick"))
+        }
     }
 }

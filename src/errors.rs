@@ -19,4 +19,7 @@ pub enum Error {
 
     #[error("Invalid data: {0}")]
     InvalidData(&'static str),
+
+    #[error("RCX error: {0}")]
+    RcxError(&'static str),
 }

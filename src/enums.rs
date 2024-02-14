@@ -167,3 +167,32 @@ pub enum SensorMode {
     TemperatureF,
     Angle,
 }
+
+/**
+    ```text
+        Type	Description	Default Mode
+        0	Raw	Raw
+        1	Touch	Boolean
+        2	Temperature	Temperature in °C
+        3	Light	Percentage
+        4	Rotation	Angle
+    ```
+*/
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum SensorType {
+    Raw = 0,
+    Touch,
+    Temperature,
+    Light,
+    Rotation,
+}
+
+/// Set the transmitter range. 0 indicates short range, 1 indicates long
+/// range. Other values are ignored.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum TransmitterRange {
+    Short = 0,
+    Long = 1,
+}
