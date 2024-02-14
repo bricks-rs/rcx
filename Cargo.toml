@@ -1,36 +1,3 @@
-[package]
-name = "rcx"
-version = "0.0.0"
-authors = ["David Young <david@thedavidyoung.co.uk>"]
-edition = "2021"
-license = "MPL-2.0"
-repository = "https://github.com/bricks-rs/rcx"
-description = "Communicate with LEGO RCX bricks"
-readme = "README.md"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[[example]]
-name = "motor"
-required-features = ["examples"]
-
-[[example]]
-name = "light_sensor"
-required-features = ["examples"]
-
-[features]
-default = ["usbtower"]
-usbtower = []
-examples = ["usbtower", "dep:color-eyre"]
-
-[dependencies]
-thiserror = "1.0.56"
-
-color-eyre = { version = "0.6", optional = true }
-
-[dev-dependencies]
-color-eyre = "0.6"
-
-[build-dependencies]
-askama = "0.12"
-serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.9"
+[workspace]
+members = ["rcx"]
+resolver = "2"
