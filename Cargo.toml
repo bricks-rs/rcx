@@ -13,6 +13,10 @@ readme = "README.md"
 name = "usbtower"
 required-features = ["examples"]
 
+[[example]]
+name = "light_sensor"
+required-features = ["examples"]
+
 [features]
 default = ["usbtower"]
 usbtower = []

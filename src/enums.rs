@@ -1,6 +1,7 @@
-use std::ops::BitOr;
+#![allow(clippy::tabs_in_doc_comments)]
 
 use crate::Error;
+use std::ops::BitOr;
 
 /// This section describes the available sources and arguments.
 ///

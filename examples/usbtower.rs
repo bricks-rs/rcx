@@ -1,14 +1,10 @@
-use rcx::{
-    opcodes::PlaySound,
-    tower::{usb::UsbTower, IrTower},
-    MotorSelection, Rcx, Sound, SourceType,
-};
+use rcx::{tower::usb::UsbTower, MotorSelection, Rcx};
 
 const DEVICE: &str = "/dev/usb/legousbtower0";
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
-    let mut rcx = UsbTower::open(DEVICE)?;
+    let rcx = UsbTower::open(DEVICE)?;
 
     let mut rcx = Rcx::new(rcx);
 

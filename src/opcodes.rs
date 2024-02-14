@@ -108,8 +108,8 @@ impl<const N: usize, T: ReadParam + Default + Copy> ReadParam for [T; N] {
         Self: Sized,
     {
         let mut ret = [T::default(); N];
-        for idx in 0..N {
-            ret[idx] = T::read_param(buf)?;
+        for item in ret.iter_mut() {
+            *item = T::read_param(buf)?;
         }
 
         Ok(ret)
