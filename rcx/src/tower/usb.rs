@@ -43,7 +43,7 @@ impl IrTower for UsbTower {
         }
         self.use_alternate_opcode = !self.use_alternate_opcode;
 
-        let mut buf = [0; 50];
+        let mut buf = [0; 1024];
         let msg = msg.serialise(&mut buf)?;
         let msg = &buf[..msg];
         let mut buf = Vec::<u8>::new();
