@@ -1,4 +1,8 @@
 # rcx
+[![Crates.io Version](https://img.shields.io/crates/v/rcx)](https://crates.io/crates/rcx)
+[![docs.rs](https://img.shields.io/docsrs/rcx)](https://docs.rs/rcx/)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/bricks-rs/rcx/rust.yml)](https://github.com/bricks-rs/rcx/actions)
+
 Interface library for communicating with the LEGO Mindstorms RCX brick
 
 ## Example

@@ -8,7 +8,7 @@ use std::{
 };
 
 const HEADER: [u8; 2] = [0x55, 0xff];
-const READ_TIMEOUT: Duration = Duration::from_secs(1);
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
 const TX_SEPARATION: Duration = Duration::from_millis(300);
 
 pub struct UsbTower {
