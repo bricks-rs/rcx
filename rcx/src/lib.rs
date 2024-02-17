@@ -28,6 +28,70 @@ impl Rcx {
         Ok(())
     }
 
+    pub fn begin_subroutine_chunk(
+        &mut self,
+        subroutine: u8,
+        length: i16,
+    ) -> Result<()> {
+        if subroutine > 7 {
+            return Err(Error::InvalidData("Subroutine must be 0-7"));
+        }
+        self.tower.send_recv(&opcodes::BeginSubroutineChunk {
+            reserved: 0,
+            subroutine,
+            reserved2: 0,
+            length,
+        })?;
+        Ok(())
+    }
+
+    pub fn begin_task_chunk(&mut self, task: u8, length: i16) -> Result<()> {
+        if task > 9 {
+            return Err(Error::InvalidData("Task must be 0-9"));
+        }
+        self.tower.send_recv(&opcodes::BeginTaskChunk {
+            reserved: 0,
+            task,
+            reserved2: 0,
+            length,
+        })?;
+        Ok(())
+    }
+
+    pub fn delete_all_subroutines(&mut self) -> Result<()> {
+        self.tower.send_recv(&opcodes::DeleteAllSubroutines {})?;
+        Ok(())
+    }
+
+    pub fn delete_all_tasks(&mut self) -> Result<()> {
+        self.tower.send_recv(&opcodes::DeleteAllTasks {})?;
+        Ok(())
+    }
+
+    pub fn delete_firmware(&mut self) -> Result<()> {
+        self.tower.send_recv(&opcodes::DeleteFirmware {
+            key: [1, 3, 5, 7, 11],
+        })?;
+        Ok(())
+    }
+
+    pub fn delete_subroutine(&mut self, subroutine: u8) -> Result<()> {
+        if subroutine > 7 {
+            return Err(Error::InvalidData("Subroutine must be 0-7"));
+        }
+        self.tower
+            .send_recv(&opcodes::DeleteSubroutine { subroutine })?;
+        Ok(())
+    }
+
+    pub fn delete_task(&mut self, task: u8) -> Result<()> {
+        if task > 9 {
+            return Err(Error::InvalidData("Task must be 0-9"));
+        }
+        self.tower.send_recv(&opcodes::DeleteTask { task })?;
+        Ok(())
+    }
+
     pub fn get_battery_power(
         &mut self,
     ) -> Result<opcodes::GetBatteryPowerResponse> {
@@ -272,7 +336,7 @@ impl Rcx {
         &mut self,
         index: i16,
         length: i16,
-        data: [u8; 256],
+        data: Vec<u8>,
         checksum: u8,
     ) -> Result<opcodes::TransferDataResponse> {
         let resp = self.tower.send_recv(&opcodes::TransferData {

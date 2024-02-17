@@ -91,6 +91,44 @@
   response:
     opcode: 0x73
 
+- name: BeginSubroutineChunk
+  description: |
+    Indicates the start of a subroutine download chunk
+
+    <https://github.com/BrickBot/nqc/blob/master/rcxlib/RCX_Cmd.cpp#L180C1-L184C2>
+
+    ```cpp
+    RCX_Cmd* RCX_Cmd::MakeBegin(RCX_ChunkType type, UByte taskNumber, UShort length)
+    {
+        UByte op = (UByte)((type == kRCX_TaskChunk) ? kRCX_BeginTaskOp : kRCX_BeginSubOp);
+        return Set(op, 0, taskNumber, 0, LO_BYTE(length), HI_BYTE(length));
+    }
+    ```
+  request:
+    opcode: 0x35
+    params:
+      - name: reserved
+      - name: subroutine
+      - name: reserved2
+      - name: length
+        ty: i16
+  response:
+    opcode: 0xc2
+
+- name: BeginTaskChunk
+  description: |
+    Indicates the start of a task download chunk
+  request:
+    opcode: 0x25
+    params:
+      - name: reserved
+      - name: task
+      - name: reserved2
+      - name: length
+        ty: i16
+  response:
+    opcode: 0xd2
+
 - name: BranchAlwaysFar
   description: |
     # 72/xx 	Command
@@ -1311,7 +1349,7 @@
       - name: length
         ty: i16
       - name: data
-        ty: "[u8; 256]"
+        ty: "Vec<u8>"
       - name: checksum
   response:
     opcode: 0xb2

@@ -30,6 +30,12 @@ impl<const N: usize> WriteParam for [u8; N] {
     }
 }
 
+impl WriteParam for Vec<u8> {
+    fn write_param(&self, mut buf: impl Write) -> io::Result<()> {
+        buf.write_all(self)
+    }
+}
+
 trait ReadParam {
     fn read_param(buf: &mut impl Read) -> Result<Self>
     where
