@@ -22,4 +22,16 @@ pub enum Error {
 
     #[error("RCX error: {0}")]
     RcxError(&'static str),
+
+    #[error("Parse error: {0}")]
+    Parse(&'static str),
+
+    #[error("Nom error: {0}")]
+    Nom(String),
+}
+
+impl<T: std::fmt::Debug> From<nom::Err<T>> for Error {
+    fn from(value: nom::Err<T>) -> Self {
+        Error::Nom(format!("{value:?}"))
+    }
 }

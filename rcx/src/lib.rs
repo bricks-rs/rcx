@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 
+pub mod binfmt;
+pub mod disasm;
 pub mod opcodes;
 pub mod tower;
 
