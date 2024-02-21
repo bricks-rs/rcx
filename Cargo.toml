@@ -1,3 +1,3 @@
 [workspace]
-members = ["rcx"]
+members = ["nqc", "rcx"]
 resolver = "2"
