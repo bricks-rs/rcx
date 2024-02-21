@@ -13,6 +13,7 @@ impl Opcode for {{ opcode.name }} {
     fn request_opcode(&self) -> u8 {
         {{ opcode.request.opcode|hex }}
     }
+
     fn response_opcode(&self) -> Option<u8> {
     {% if let Some(response) = opcode.response %}
         Some({{ response.opcode|hex}})
@@ -20,6 +21,7 @@ impl Opcode for {{ opcode.name }} {
         None
     {% endif %}
     }
+
     fn serialise(&self, buf: &mut [u8]) -> Result<usize> {
         #[allow(unused_mut)]
         let mut cursor = Cursor::new(buf);
@@ -27,6 +29,24 @@ impl Opcode for {{ opcode.name }} {
         self.{{ param.name }}.write_param(&mut cursor)?;
         {% endfor %}
         Ok(cursor.position().try_into()?)
+    }
+
+    #[allow(unreachable_code)]
+    fn disasm(i: &[u8]) -> IResult<&[u8], Self> {
+        {% for param in opcode.request.params %}
+        let (i, {{ param.name }}) =
+            {% if param.ty == "Vec<u8>" %}
+            unimplemented!();
+            {% else %}
+            <{{ param.ty }} as DisasmParam>::disasm_param(i)?;
+            {% endif %}
+        {% endfor %}
+
+        Ok((i, Self {
+            {% for param in opcode.request.params %}
+            {{ param.name }},
+            {% endfor %}
+        }))
     }
 }
 
@@ -83,4 +103,33 @@ impl {{ opcode.name }}Response {
 }
 {% endif %}
 
+impl Display for {{ opcode.name }} {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        write!(fmt, "{{ opcode.name }}")?;
+        {% for param in opcode.request.params %}
+        write!(fmt, " {{ param.name }}={:02x?}", self.{{ param.name }})?;
+        {% endfor %}
+        Ok(())
+    }
+}
+
 {% endfor %}
+
+fn dynify((i, code): (&[u8], impl Opcode + 'static)) -> (&[u8], Box<dyn Opcode>)
+{
+    (i, Box::new(code))
+}
+
+pub fn parse_opcode(i: &[u8]) -> IResult<&[u8], Box<dyn Opcode>> {
+    let (i, code) = nom::number::complete::u8(i)?;
+    match code {
+        {% for opcode in opcodes %}
+        {{ opcode.request.opcode|hex }} =>
+            Ok(dynify({{ opcode.name }}::disasm(i)?)),
+        {% endfor %}
+        other => Err(nom::Err::Failure(nom::error::Error {
+            input: i,
+            code: nom::error::ErrorKind::Fail,
+        })),
+    }
+}

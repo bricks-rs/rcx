@@ -655,6 +655,15 @@
   response:
     opcode: 0xd4
 
+- name: PlayToneVar
+  description: |
+    Play tone from variable?
+  request:
+    opcode: 0x02
+    params:
+      - name: kAF_Var
+      - name: kAF_Raw8
+
 - name: PowerOff
   description: |
     # 60/68 	Request/Command
@@ -1276,7 +1285,8 @@
       - name: arg2
         ty: i8
       - name: offset
-        ty: i16
+        ty: u16
+        branch_target: true
 
 - name: TestAndBranchNear
   description: |
@@ -1314,6 +1324,7 @@
       - name: arg2
         ty: i8
       - name: offset
+        branch_target: true
 
 - name: TransferData
   description: |

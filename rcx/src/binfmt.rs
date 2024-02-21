@@ -69,7 +69,7 @@ pub struct RcxBin {
     pub version: u16,
     pub section_count: u16,
     pub symbol_count: u16,
-    pub target_type: u8,
+    pub target_type: TargetType,
     pub reserved: u8,
     pub sections: Vec<Section>,
     pub symbols: Vec<Symbol>,
@@ -154,7 +154,7 @@ fn parse(bin: &[u8]) -> IResult<&[u8], RcxBin> {
     let (i, version) = read_u16(i)?;
     let (i, section_count) = read_u16(i)?;
     let (i, symbol_count) = read_u16(i)?;
-    let (i, target_type) = read_u8(i)?;
+    let (i, target_type) = TargetType::parse(i)?;
     let (i, reserved) = read_u8(i)?;
 
     trace!("Parse {section_count} sections");
@@ -176,6 +176,50 @@ fn parse(bin: &[u8]) -> IResult<&[u8], RcxBin> {
             symbols,
         },
     ))
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum TargetType {
+    /// Original RCX (i.e., RCX bricks with v.0309 or earlier firmwares)
+    Rcx = 0,
+    /// CyberMaster
+    CyberMaster,
+    /// Scout
+    Scout,
+    /// RCX 2.0 (i.e., RCX bricks with v.0328 or later firmwares)
+    Rcx2,
+    /// Spybotics
+    Spybotics,
+    /// Dick Swan's alternate firmware
+    Swan,
+}
+
+impl TargetType {
+    pub fn parse(i: &[u8]) -> IResult<&[u8], Self> {
+        let (i, ty) = nom::number::complete::u8(i)?;
+        let ty = match ty {
+            0 => Self::Rcx,
+            1 => Self::CyberMaster,
+            2 => Self::Scout,
+            3 => Self::Rcx2,
+            4 => Self::Spybotics,
+            5 => Self::Swan,
+            _ => {
+                return Err(nom::Err::Failure(nom::error::Error {
+                    input: i,
+                    code: nom::error::ErrorKind::Verify,
+                }));
+            }
+        };
+        Ok((i, ty))
+    }
+}
+
+impl Display for TargetType {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
+        Debug::fmt(self, fmt)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -403,7 +447,7 @@ mod test {
                 version: 0x0102,
                 section_count: 1,
                 symbol_count: 1,
-                target_type: 0,
+                target_type: TargetType::Rcx,
                 reserved: 0,
                 sections: vec![Section {
                     ty: SectionType::Task,
@@ -435,7 +479,7 @@ mod test {
                 version: 0x0102,
                 section_count: 3,
                 symbol_count: 5,
-                target_type: 0,
+                target_type: TargetType::Rcx,
                 reserved: 0,
                 sections: vec![
                     Section {

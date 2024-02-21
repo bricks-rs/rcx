@@ -33,6 +33,7 @@ tracing = "0.1.40"
 [dev-dependencies]
 color-eyre = "0.6"
 hex-literal = "0.4.1"
+pretty_assertions = "1.4.0"
 
 [build-dependencies]
 askama = "0.12"

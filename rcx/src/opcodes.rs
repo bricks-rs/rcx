@@ -1,5 +1,9 @@
 use crate::{Error, Result};
-use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
+use nom::{number::Endianness, IResult};
+use std::{
+    fmt::{self, Debug, Display, Formatter},
+    io::{self, Cursor, Read, Seek, SeekFrom, Write},
+};
 
 fn is_header(byte: u8) -> bool {
     [0x00, 0x55, 0xff].contains(&byte)
@@ -80,6 +84,59 @@ readparamimpl!(i8);
 readparamimpl!(u16);
 readparamimpl!(i16);
 
+trait DisasmParam {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized;
+}
+
+impl DisasmParam for u8 {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        nom::number::complete::u8(i)
+    }
+}
+
+impl DisasmParam for i8 {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        nom::number::complete::i8(i)
+    }
+}
+
+impl DisasmParam for u16 {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        nom::number::complete::u16(Endianness::Little)(i)
+    }
+}
+
+impl DisasmParam for i16 {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        nom::number::complete::i16(Endianness::Little)(i)
+    }
+}
+
+impl<const N: usize> DisasmParam for [u8; N] {
+    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        let (i, out) = nom::bytes::complete::take(N)(i)?;
+        let out = out.try_into().unwrap();
+        Ok((i, out))
+    }
+}
+
 trait AddToChecksum {
     fn add_to_checksum(&self, checksum: &mut u8);
 }
@@ -122,10 +179,19 @@ impl<const N: usize, T: ReadParam + Default + Copy> ReadParam for [T; N] {
     }
 }
 
-pub trait Opcode {
+pub trait Opcode: Debug + Display {
     fn request_opcode(&self) -> u8;
     fn response_opcode(&self) -> Option<u8>;
     fn serialise(&self, buf: &mut [u8]) -> Result<usize>;
+    fn disasm(i: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized;
+    fn branch_target(&self) -> Option<u8> {
+        None
+    }
+    fn is_unconditional_branch(&self) -> bool {
+        false
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/opcodes.rs"));
