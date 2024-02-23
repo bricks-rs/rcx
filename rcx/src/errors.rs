@@ -28,6 +28,12 @@ pub enum Error {
 
     #[error("Nom error: {0}")]
     Nom(String),
+
+    #[error("Reached end of input")]
+    InsufficientData,
+
+    #[error("Invalid opcode: 0x{0:02x}")]
+    InvalidOpcode(u8),
 }
 
 impl<T: std::fmt::Debug> From<nom::Err<T>> for Error {

@@ -74,18 +74,16 @@ fn print_section(section: &Section, bin: &RcxBin, out: &mut impl Write) {
 }
 
 fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
-    let mut i = section;
     let mut out = Vec::new();
-    let mut offset = 0;
+    let mut pc = 0;
     let mut jump_targets = HashSet::new();
-    while !i.is_empty() {
+    while pc < section.len() {
         let opcode;
-        let orig_len = i.len();
-        (i, opcode) = match crate::opcodes::parse_opcode(i) {
+        opcode = match crate::opcodes::parse_opcode(section, &mut pc) {
             Ok(opcode) => opcode,
             Err(e) => {
                 eprintln!("{e}");
-                eprintln!("[{offset:02x}] {i:02x?}");
+                eprintln!("[{:02x}] {:02x?}", pc, &section[pc..]);
                 break;
             }
         };
@@ -93,10 +91,7 @@ fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
             jump_targets.insert(tgt);
         }
 
-        out.push(Instruction { offset, opcode });
-
-        // increment offset by the number of bytes eaten
-        offset += orig_len - i.len();
+        out.push(Instruction { offset: pc, opcode });
     }
     out
 }

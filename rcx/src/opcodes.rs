@@ -1,5 +1,4 @@
 use crate::{Error, Result};
-use nom::{number::Endianness, IResult};
 use std::{
     fmt::{self, Debug, Display, Formatter},
     io::{self, Cursor, Read, Seek, SeekFrom, Write},
@@ -84,56 +83,73 @@ readparamimpl!(i8);
 readparamimpl!(u16);
 readparamimpl!(i16);
 
+fn read_byte(bin: &[u8], pc: &mut usize) -> Result<u8> {
+    if let Some(byte) = bin.get(*pc) {
+        *pc += 1;
+        Ok(*byte)
+    } else {
+        Err(Error::InsufficientData)
+    }
+}
+
 trait DisasmParam {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized;
 }
 
 impl DisasmParam for u8 {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized,
     {
-        nom::number::complete::u8(i)
+        read_byte(bin, pc)
     }
 }
 
 impl DisasmParam for i8 {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized,
     {
-        nom::number::complete::i8(i)
+        Ok(i8::from_le_bytes([read_byte(bin, pc)?]))
     }
 }
 
 impl DisasmParam for u16 {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized,
     {
-        nom::number::complete::u16(Endianness::Little)(i)
+        Ok(u16::from_le_bytes([
+            read_byte(bin, pc)?,
+            read_byte(bin, pc)?,
+        ]))
     }
 }
 
 impl DisasmParam for i16 {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized,
     {
-        nom::number::complete::i16(Endianness::Little)(i)
+        Ok(i16::from_le_bytes([
+            read_byte(bin, pc)?,
+            read_byte(bin, pc)?,
+        ]))
     }
 }
 
 impl<const N: usize> DisasmParam for [u8; N] {
-    fn disasm_param(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm_param(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized,
     {
-        let (i, out) = nom::bytes::complete::take(N)(i)?;
-        let out = out.try_into().unwrap();
-        Ok((i, out))
+        let mut out = [0; N];
+        for byte in out.iter_mut() {
+            *byte = read_byte(bin, pc)?
+        }
+        Ok(out)
     }
 }
 
@@ -183,7 +199,7 @@ pub trait Opcode: Debug + Display {
     fn request_opcode(&self) -> u8;
     fn response_opcode(&self) -> Option<u8>;
     fn serialise(&self, buf: &mut [u8]) -> Result<usize>;
-    fn disasm(i: &[u8]) -> IResult<&[u8], Self>
+    fn disasm(bin: &[u8], pc: &mut usize) -> Result<Self>
     where
         Self: Sized;
     fn branch_target(&self) -> Option<u8> {

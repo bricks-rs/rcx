@@ -32,21 +32,21 @@ impl Opcode for {{ opcode.name }} {
     }
 
     #[allow(unreachable_code)]
-    fn disasm(i: &[u8]) -> IResult<&[u8], Self> {
+    fn disasm(bin: &[u8], pc: &mut usize) -> Result<Self> {
         {% for param in opcode.request.params %}
-        let (i, {{ param.name }}) =
+        let {{ param.name }} =
             {% if param.ty == "Vec<u8>" %}
             unimplemented!();
             {% else %}
-            <{{ param.ty }} as DisasmParam>::disasm_param(i)?;
+            <{{ param.ty }} as DisasmParam>::disasm_param(bin, pc)?;
             {% endif %}
         {% endfor %}
 
-        Ok((i, Self {
+        Ok(Self {
             {% for param in opcode.request.params %}
             {{ param.name }},
             {% endfor %}
-        }))
+        })
     }
 }
 
@@ -115,21 +115,18 @@ impl Display for {{ opcode.name }} {
 
 {% endfor %}
 
-fn dynify((i, code): (&[u8], impl Opcode + 'static)) -> (&[u8], Box<dyn Opcode>)
+fn dynify(code:impl Opcode + 'static) ->  Box<dyn Opcode>
 {
-    (i, Box::new(code))
+    Box::new(code)
 }
 
-pub fn parse_opcode(i: &[u8]) -> IResult<&[u8], Box<dyn Opcode>> {
-    let (i, code) = nom::number::complete::u8(i)?;
+pub fn parse_opcode(bin: &[u8], pc: &mut usize) -> Result<Box<dyn Opcode>> {
+    let code = read_byte(bin, pc)?;
     match code {
         {% for opcode in opcodes %}
         {{ opcode.request.opcode|hex }} =>
-            Ok(dynify({{ opcode.name }}::disasm(i)?)),
+            Ok(dynify({{ opcode.name }}::disasm(bin, pc)?)),
         {% endfor %}
-        other => Err(nom::Err::Failure(nom::error::Error {
-            input: i,
-            code: nom::error::ErrorKind::Fail,
-        })),
+        other => Err(Error::InvalidOpcode(other)),
     }
 }
