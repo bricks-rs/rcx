@@ -1,13 +1,13 @@
 use crate::{
     binfmt::{RcxBin, Section, SectionType, SymbolType},
-    opcodes::Opcode,
+    opcodes::{Opcode, Opcodes},
 };
 use std::{collections::HashSet, fmt::Write, path::Path};
 
 #[derive(Debug)]
 struct Instruction {
     offset: usize,
-    opcode: Box<dyn Opcode>,
+    opcode: Opcodes,
 }
 
 #[must_use = "This function returns the disassembly as a string"]
@@ -76,7 +76,7 @@ fn print_section(section: &Section, bin: &RcxBin, out: &mut impl Write) {
 fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
     let mut out = Vec::new();
     let mut pc = 0;
-    let mut jump_targets = HashSet::new();
+    let mut seen_offsets = HashSet::new();
     while pc < section.len() {
         let opcode;
         opcode = match crate::opcodes::parse_opcode(section, &mut pc) {
@@ -87,13 +87,16 @@ fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
                 break;
             }
         };
-        if let Some(tgt) = opcode.branch_target() {
-            jump_targets.insert(tgt);
-        }
 
+        seen_offsets.insert(pc);
         out.push(Instruction { offset: pc, opcode });
     }
     out
+}
+
+/// If the opcode is a branch then returns its offset
+fn is_branch(opcode: &dyn Opcode) -> Option<usize> {
+    None
 }
 
 #[cfg(test)]

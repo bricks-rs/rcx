@@ -120,13 +120,30 @@ fn dynify(code:impl Opcode + 'static) ->  Box<dyn Opcode>
     Box::new(code)
 }
 
-pub fn parse_opcode(bin: &[u8], pc: &mut usize) -> Result<Box<dyn Opcode>> {
+pub fn parse_opcode(bin: &[u8], pc: &mut usize) -> Result<Opcodes> {
     let code = read_byte(bin, pc)?;
     match code {
         {% for opcode in opcodes %}
         {{ opcode.request.opcode|hex }} =>
-            Ok(dynify({{ opcode.name }}::disasm(bin, pc)?)),
+            Ok(Opcodes::{{ opcode.name }}({{ opcode.name }}::disasm(bin, pc)?)),
         {% endfor %}
         other => Err(Error::InvalidOpcode(other)),
+    }
+}
+
+#[derive(Debug)]
+pub enum Opcodes {
+    {% for opcode in opcodes %}
+    {{ opcode.name }}({{ opcode.name }}),
+    {% endfor %}
+}
+
+impl Display for Opcodes {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        match self {
+            {% for opcode in opcodes %}
+            Self::{{ opcode.name }}(code) => write!(fmt, "{code}"),
+            {% endfor %}
+        }
     }
 }
