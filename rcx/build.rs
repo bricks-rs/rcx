@@ -68,8 +68,6 @@ struct Param {
     name: String,
     #[serde(default = "u8_")]
     ty: String,
-    #[serde(default)]
-    branch_target: bool,
 }
 
 #[derive(Template)]

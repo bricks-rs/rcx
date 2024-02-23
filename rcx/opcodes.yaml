@@ -172,7 +172,7 @@
     supports_alternate: false
     params:
       - name: offset
-      - name: extension
+      #- name: extension
 
 - name: CallSubroutine
   description: |
@@ -1285,8 +1285,7 @@
       - name: arg2
         ty: i8
       - name: offset
-        ty: u16
-        branch_target: true
+        ty: i16
 
 - name: TestAndBranchNear
   description: |
@@ -1324,7 +1323,6 @@
       - name: arg2
         ty: i8
       - name: offset
-        branch_target: true
 
 - name: TransferData
   description: |

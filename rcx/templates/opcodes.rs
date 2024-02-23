@@ -147,3 +147,26 @@ impl Display for Opcodes {
         }
     }
 }
+
+impl Opcode for Opcodes {
+    fn request_opcode(&self) -> u8 {
+        match self {
+            {% for opcode in opcodes %}
+            Self::{{ opcode.name }}(code) => code.request_opcode(),
+            {% endfor %}
+        }
+    }
+    fn response_opcode(&self) -> Option<u8> {
+        todo!()
+    }
+    fn serialise(&self, buf: &mut [u8]) -> Result<usize> {
+        match self {
+            {% for opcode in opcodes %}
+            Self::{{ opcode.name }}(code) => code.serialise(buf),
+            {% endfor %}
+        }
+    }
+    fn disasm(bin: &[u8], pc: &mut usize) -> Result<Self> {
+        todo!()
+    }
+}

@@ -2,12 +2,17 @@ use crate::{
     binfmt::{RcxBin, Section, SectionType, SymbolType},
     opcodes::{Opcode, Opcodes},
 };
-use std::{collections::HashSet, fmt::Write, path::Path};
+use std::{
+    collections::HashSet,
+    fmt::{self, Display, Formatter, Write},
+    path::Path,
+};
 
 #[derive(Debug)]
 struct Instruction {
     offset: usize,
     opcode: Opcodes,
+    branch_target: Option<BranchType>,
 }
 
 #[must_use = "This function returns the disassembly as a string"]
@@ -67,9 +72,26 @@ fn print_section(section: &Section, bin: &RcxBin, out: &mut impl Write) {
 
     println!("{:02x?}", section.data);
 
-    let section_disasm = disasm_code_section(&section.data);
+    let mut section_disasm = disasm_code_section(&section.data);
+    section_disasm.sort_unstable_by_key(|instr| instr.offset);
     for instr in section_disasm {
-        let _ = writeln!(out, "{:02x}: {}", instr.offset, instr.opcode);
+        let target = instr
+            .branch_target
+            .map(|tgt| format!(" => {tgt}"))
+            .unwrap_or_default();
+        let mut buf = [0u8; 10];
+        let len = instr.opcode.serialise(&mut buf).unwrap();
+        let hex_source = hex::encode(&buf[..len]);
+        let _ = writeln!(
+            out,
+            "{:02x}: {:02x} {}{}    {:02x}{}",
+            instr.offset,
+            instr.opcode.request_opcode(),
+            instr.opcode,
+            target,
+            instr.opcode.request_opcode(),
+            hex_source,
+        );
     }
 }
 
@@ -77,26 +99,117 @@ fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
     let mut out = Vec::new();
     let mut pc = 0;
     let mut seen_offsets = HashSet::new();
+    let mut branch_instructions_to_go_back_to = Vec::new();
     while pc < section.len() {
-        let opcode;
-        opcode = match crate::opcodes::parse_opcode(section, &mut pc) {
+        let opcode = match crate::opcodes::parse_opcode(section, &mut pc) {
             Ok(opcode) => opcode,
             Err(e) => {
                 eprintln!("{e}");
                 eprintln!("[{:02x}] {:02x?}", pc, &section[pc..]);
-                break;
+                if branch_instructions_to_go_back_to.is_empty() {
+                    break;
+                } else {
+                    // just checked is_empty, so this unwrap will never
+                    // go off
+                    pc = branch_instructions_to_go_back_to.pop().unwrap();
+                    continue;
+                }
             }
         };
 
+        let branch_target = is_branch(&opcode, pc);
         seen_offsets.insert(pc);
-        out.push(Instruction { offset: pc, opcode });
+        out.push(Instruction {
+            offset: pc,
+            opcode,
+            branch_target,
+        });
+
+        match branch_target {
+            Some(BranchType::Unconditional(target)) => {
+                pc = target;
+            }
+            Some(BranchType::Conditional(target)) => {
+                branch_instructions_to_go_back_to.push(pc);
+                pc = target;
+            }
+            None => {}
+        }
+
+        // if seen_offsets.contains(&pc) {
+        //     println!("Seen {:02x}@{:02x} previously", section[pc], pc);
+        //     if branch_instructions_to_go_back_to.is_empty() {
+        //         break;
+        //     } else {
+        //         // just checked is_empty, so this unwrap will never
+        //         // go off
+        //         pc = branch_instructions_to_go_back_to.pop().unwrap();
+        //         continue;
+        //     }
+        // }
     }
     out
 }
 
+#[derive(Copy, Clone, Debug)]
+enum BranchType {
+    Conditional(usize),
+    Unconditional(usize),
+}
+
+impl Display for BranchType {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        let target = match self {
+            Self::Conditional(target) => target,
+            Self::Unconditional(target) => target,
+        };
+        write!(fmt, "{target:02x}")
+    }
+}
+
 /// If the opcode is a branch then returns its offset
-fn is_branch(opcode: &dyn Opcode) -> Option<usize> {
-    None
+fn is_branch(opcode: &Opcodes, pc: usize) -> Option<BranchType> {
+    Some(match opcode {
+        Opcodes::BranchAlwaysFar(opcode) => {
+            // pc has already been advanced to the address of extension,
+            // so the offset is one byte earlier
+            let address_of_offset = pc - 1;
+            let target = if opcode.offset & 0x80 == 0 {
+                address_of_offset
+                    + usize::from(opcode.offset)
+                    + 128 * usize::from(opcode.extension)
+            } else {
+                address_of_offset + 128
+                    - usize::from(opcode.offset)
+                    - 128 * usize::from(opcode.extension)
+            };
+            BranchType::Unconditional(target)
+        }
+        Opcodes::BranchAlwaysNear(opcode) => {
+            let address_of_offset = pc;
+            let target = if opcode.offset & 0x80 == 0 {
+                address_of_offset + usize::from(opcode.offset)
+            } else {
+                address_of_offset + 128 - usize::from(opcode.offset)
+            };
+            BranchType::Unconditional(target)
+        }
+        Opcodes::DecrementLoopCounterFar(_opcode) => {
+            todo!()
+        }
+        Opcodes::DecrementLoopCounterNear(_opcode) => {
+            todo!()
+        }
+        Opcodes::TestAndBranchFar(_opcode) => {
+            todo!()
+        }
+        Opcodes::TestAndBranchNear(opcode) => {
+            let address_of_offset = pc - 1;
+            let target = address_of_offset + usize::from(opcode.offset);
+            BranchType::Conditional(target)
+        }
+        _ => None?,
+    })
 }
 
 #[cfg(test)]
