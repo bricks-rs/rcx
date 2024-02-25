@@ -1,5 +1,5 @@
 ---
-source: nqc/src/lexer/error.rs
+source: nqc/src/error.rs
 expression: error.to_string()
 ---
 Syntax error on line 2:

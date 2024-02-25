@@ -1,5 +1,7 @@
-use super::Span;
+use crate::Span;
 use std::fmt::{self, Display};
+
+pub type Result<'src, T> = std::result::Result<T, Error<'src>>;
 
 #[derive(Debug)]
 pub struct Error<'src> {

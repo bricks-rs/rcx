@@ -1,8 +1,5 @@
+use crate::{Error, ErrorKind, Span};
 use std::str::FromStr;
-
-pub mod error;
-
-use error::{Error, ErrorKind};
 
 type Src<'src> =
     std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'src>>>;
@@ -11,12 +8,6 @@ type Src<'src> =
 pub struct Token<'src> {
     pub kind: TokenKind<'src>,
     pub span: Span,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Span {
-    start: usize,
-    length: usize,
 }
 
 #[derive(Debug, PartialEq, Eq)]
