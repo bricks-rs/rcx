@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 
+## [v0.1.3] - 2024-02-25
+### Added
+* Basic disassembler
+
 ## [v0.1.2] - 2024-02-17
 ### Added
 * Implement `delete{,_all}_{tasks,subroutines}`
