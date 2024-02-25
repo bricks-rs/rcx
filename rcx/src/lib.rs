@@ -30,36 +30,6 @@ impl Rcx {
         Ok(())
     }
 
-    pub fn begin_subroutine_chunk(
-        &mut self,
-        subroutine: u8,
-        length: i16,
-    ) -> Result<()> {
-        if subroutine > 7 {
-            return Err(Error::InvalidData("Subroutine must be 0-7"));
-        }
-        self.tower.send_recv(&opcodes::BeginSubroutineChunk {
-            reserved: 0,
-            subroutine,
-            reserved2: 0,
-            length,
-        })?;
-        Ok(())
-    }
-
-    pub fn begin_task_chunk(&mut self, task: u8, length: i16) -> Result<()> {
-        if task > 9 {
-            return Err(Error::InvalidData("Task must be 0-9"));
-        }
-        self.tower.send_recv(&opcodes::BeginTaskChunk {
-            reserved: 0,
-            task,
-            reserved2: 0,
-            length,
-        })?;
-        Ok(())
-    }
-
     pub fn delete_all_subroutines(&mut self) -> Result<()> {
         self.tower.send_recv(&opcodes::DeleteAllSubroutines {})?;
         Ok(())
@@ -287,15 +257,16 @@ impl Rcx {
 
     pub fn start_subroutine_download(
         &mut self,
-        subroutine: i16,
+        subroutine: u8,
         length: i16,
     ) -> Result<opcodes::StartSubroutineDownloadResponse> {
         if subroutine > 7 {
             return Err(Error::InvalidData("Subroutine must be 0-7"));
         }
         let resp = self.tower.send_recv(&opcodes::StartSubroutineDownload {
-            unknown: 0,
+            reserved: 0,
             subroutine,
+            reserved2: 0,
             length,
         })?;
         opcodes::StartSubroutineDownloadResponse::deserialise(&resp)
@@ -314,8 +285,9 @@ impl Rcx {
             return Err(Error::InvalidData("Task must be 0-9"));
         }
         self.tower.send_recv(&opcodes::StartTaskDownload {
-            unknown: 0,
-            task: i16::from(task),
+            reserved: 0,
+            task,
+            reserved2: 0,
             length,
         })?;
         Ok(())

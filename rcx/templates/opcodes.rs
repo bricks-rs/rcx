@@ -31,7 +31,7 @@ impl Opcode for {{ opcode.name }} {
         Ok(cursor.position().try_into()?)
     }
 
-    #[allow(unreachable_code)]
+    #[allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)]
     fn disasm(bin: &[u8], pc: &mut usize) -> Result<Self> {
         {% for param in opcode.request.params %}
         let {{ param.name }} =
@@ -115,11 +115,6 @@ impl Display for {{ opcode.name }} {
 
 {% endfor %}
 
-fn dynify(code:impl Opcode + 'static) ->  Box<dyn Opcode>
-{
-    Box::new(code)
-}
-
 pub fn parse_opcode(bin: &[u8], pc: &mut usize) -> Result<Opcodes> {
     let code = read_byte(bin, pc)?;
     match code {
@@ -166,7 +161,7 @@ impl Opcode for Opcodes {
             {% endfor %}
         }
     }
-    fn disasm(bin: &[u8], pc: &mut usize) -> Result<Self> {
+    fn disasm(_bin: &[u8], _pc: &mut usize) -> Result<Self> {
         todo!()
     }
 }
