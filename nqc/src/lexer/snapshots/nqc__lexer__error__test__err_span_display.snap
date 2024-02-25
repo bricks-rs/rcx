@@ -1,0 +1,7 @@
+---
+source: nqc/src/lexer/error.rs
+expression: error.to_string()
+---
+Syntax error on line 2:
+2| with an error
+           ^^^^^

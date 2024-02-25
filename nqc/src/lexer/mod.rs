@@ -1,12 +1,16 @@
 use std::str::FromStr;
 
+pub mod error;
+
+use error::{Error, ErrorKind};
+
 type Src<'src> =
     std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'src>>>;
 
 #[derive(Debug)]
 pub struct Token<'src> {
-    kind: TokenKind<'src>,
-    span: Span,
+    pub kind: TokenKind<'src>,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -213,34 +217,6 @@ pub enum Type {
     Int,
 }
 
-#[derive(Debug)]
-pub struct Error<'src> {
-    pub kind: ErrorKind,
-    pub span: Span,
-    raw: &'src str,
-}
-
-#[derive(Debug)]
-pub enum ErrorKind {
-    Syntax,
-    Eof,
-}
-
-impl<'src> Error<'src> {
-    pub fn new(
-        start: usize,
-        length: usize,
-        kind: ErrorKind,
-        raw: &'src str,
-    ) -> Self {
-        Self {
-            kind,
-            span: Span { start, length },
-            raw,
-        }
-    }
-}
-
 pub struct TokenStream<'src> {
     src: Src<'src>,
     raw: &'src str,
@@ -262,7 +238,7 @@ impl<'src> Iterator for TokenStream<'src> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.src.peek()?;
-        Some(Token::parse(&mut self.src, &mut self.line, &self.raw))
+        Some(Token::parse(&mut self.src, &mut self.line, self.raw))
     }
 }
 
