@@ -3,7 +3,7 @@ use crate::{
     opcodes::{Opcode, Opcodes},
 };
 use std::{
-    collections::HashSet,
+    collections::BTreeMap,
     fmt::{self, Display, Formatter, Write},
     path::Path,
 };
@@ -96,11 +96,22 @@ fn print_section(section: &Section, bin: &RcxBin, out: &mut impl Write) {
 }
 
 fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
-    let mut out = Vec::new();
+    let mut out = BTreeMap::new();
     let mut pc = 0;
-    let mut seen_offsets = HashSet::new();
     let mut branch_instructions_to_go_back_to = Vec::new();
     while pc < section.len() {
+        if out.contains_key(&pc) {
+            println!("Seen {:02x}@{:02x} previously", section[pc], pc);
+
+            if let Some(next) = branch_instructions_to_go_back_to.pop() {
+                pc = next;
+                continue;
+            } else {
+                break;
+            }
+        }
+        let start = pc;
+
         let opcode = match crate::opcodes::parse_opcode(section, &mut pc) {
             Ok(opcode) => opcode,
             Err(e) => {
@@ -118,12 +129,14 @@ fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
         };
 
         let branch_target = is_branch(&opcode, pc);
-        seen_offsets.insert(pc);
-        out.push(Instruction {
-            offset: pc,
-            opcode,
-            branch_target,
-        });
+        out.insert(
+            start,
+            Instruction {
+                offset: start,
+                opcode,
+                branch_target,
+            },
+        );
 
         match branch_target {
             Some(BranchType::Unconditional(target)) => {
@@ -135,20 +148,8 @@ fn disasm_code_section(section: &[u8]) -> Vec<Instruction> {
             }
             None => {}
         }
-
-        // if seen_offsets.contains(&pc) {
-        //     println!("Seen {:02x}@{:02x} previously", section[pc], pc);
-        //     if branch_instructions_to_go_back_to.is_empty() {
-        //         break;
-        //     } else {
-        //         // just checked is_empty, so this unwrap will never
-        //         // go off
-        //         pc = branch_instructions_to_go_back_to.pop().unwrap();
-        //         continue;
-        //     }
-        // }
     }
-    out
+    out.into_values().collect()
 }
 
 #[derive(Copy, Clone, Debug)]
