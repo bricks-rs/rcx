@@ -1,0 +1,38 @@
+---
+source: nqc/src/ast/mod.rs
+expression: ast
+---
+Ast {
+    nodes: [
+        Var(
+            Var {
+                span: Span {
+                    start: 7,
+                    length: 1,
+                },
+                ident: "var",
+                init: None,
+            },
+        ),
+        Var(
+            Var {
+                span: Span {
+                    start: 17,
+                    length: 1,
+                },
+                ident: "var2",
+                init: Some(
+                    Expr {
+                        span: Span {
+                            start: 19,
+                            length: 1,
+                        },
+                        kind: LiteralInt(
+                            "5",
+                        ),
+                    },
+                ),
+            },
+        ),
+    ],
+}

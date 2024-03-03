@@ -73,7 +73,7 @@ impl<'src> Token<'src> {
                     == '/'
                 {
                     let mut last_idx = start;
-                    let newline_idx = loop {
+                    let _newline_idx = loop {
                         if let Some((idx, chr)) = src.next() {
                             if chr == '\n' {
                                 break idx;
@@ -247,47 +247,6 @@ pub enum Type {
     Int,
 }
 
-// pub struct TokenStream<'src> {
-//     src: Src<'src>,
-//     raw: &'src str,
-//     line: usize,
-// }
-
-// impl<'src> TokenStream<'src> {
-//     pub fn new(src: &'src str) -> Self {
-//         Self {
-//             src: src.chars().enumerate().peekable(),
-//             raw: src,
-//             line: 0,
-//         }
-//     }
-
-//     pub fn collect(self) -> Result<Vec<Token<'src>>, Vec<Error<'src>>> {
-//         let mut tokens = Vec::new();
-//         let mut errors = Vec::new();
-//         for token in self {
-//             match token {
-//                 Ok(token) => tokens.push(token),
-//                 Err(error) => errors.push(error),
-//             }
-//         }
-//         if errors.is_empty() {
-//             Ok(tokens)
-//         } else {
-//             Err(errors)
-//         }
-//     }
-// }
-
-// impl<'src> Iterator for TokenStream<'src> {
-//     type Item = Result<Token<'src>, Error<'src>>;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.src.peek()?;
-//         Some(Token::parse(&mut self.src, &mut self.line, self.raw))
-//     }
-// }
-
 pub struct Tokens<'src> {
     src: Src<'src>,
     raw: &'src str,
@@ -326,14 +285,6 @@ impl<'src> Tokens<'src> {
         }
     }
 }
-
-// impl<'src> Tokens<'src> {
-//     pub fn stream(&self) -> TokenStream {
-//         TokenStream {
-//             iter: self.tokens.iter().peekable(),
-//         }
-//     }
-// }
 
 #[derive(Debug)]
 pub struct TokenStream<'src> {
@@ -375,6 +326,10 @@ impl<'src> TokenStream<'src> {
 
     pub fn eof(&mut self) -> bool {
         self.peek().is_none()
+    }
+
+    pub fn raw(&self) -> &'src str {
+        self.raw
     }
 }
 

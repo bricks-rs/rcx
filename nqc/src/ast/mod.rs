@@ -1,10 +1,8 @@
 use crate::{
     error::{Error, ErrorKind, Result},
-    lexer::{Keyword, Token, TokenKind, TokenStream, Tokens},
+    lexer::{Keyword, Token, TokenKind, TokenStream},
     Span,
 };
-
-// type Tokens<'src> = std::iter::Peekable<TokenStream<'src>>;
 
 fn get_ident<'src>(
     tokens: &mut TokenStream<'src>,
@@ -47,6 +45,48 @@ impl<'src> TopLevelNode<'src> {
         Ok(match &token.kind {
             TokenKind::Kw(Keyword::Task) => Self::Task(Task::parse(tokens)?),
             TokenKind::Kw(Keyword::Sub) => Self::Sub(Sub::parse(tokens)?),
+            TokenKind::Kw(Keyword::Int) => {
+                // could be var decl or function decl
+                let ident_token = tokens.next_token()?;
+                let TokenKind::Ident(ident) = ident_token.kind else {
+                    return Err(Error::new(
+                        ident_token.span.start,
+                        ident_token.span.length,
+                        ErrorKind::Syntax(format!(
+                            "Invalid token {:?}, expected ident",
+                            ident_token.kind
+                        )),
+                        tokens.raw(),
+                    ));
+                };
+
+                // either 'int var = 5;', 'int var;', or 'int fn(){}'
+                let eq_or_paren = tokens.next_token()?;
+                match &eq_or_paren.kind {
+                    TokenKind::Semicolon => Self::Var(Var {
+                        span: eq_or_paren.span,
+                        ident,
+                        init: None,
+                    }),
+                    TokenKind::Eq => Self::Var(Var {
+                        span: eq_or_paren.span,
+                        ident,
+                        init: Some(Expr::parse(tokens)?),
+                    }),
+                    TokenKind::LeftParen => todo!("fn decl"),
+                    other => {
+                        return Err(Error::new(
+                            ident_token.span.start,
+                            ident_token.span.length,
+                            ErrorKind::Syntax(format!(
+                                "Invalid token {:?}, expected var or fn",
+                                other,
+                            )),
+                            tokens.raw(),
+                        ));
+                    }
+                }
+            }
             other => panic!("Unhandled token '{:?}'", other),
         })
     }
@@ -56,6 +96,7 @@ impl<'src> TopLevelNode<'src> {
 pub struct Var<'src> {
     pub span: Span,
     pub ident: &'src str,
+    pub init: Option<Expr<'src>>,
 }
 
 #[derive(Debug)]
@@ -157,18 +198,61 @@ impl<'src> Stmt<'src> {
 }
 
 #[derive(Debug)]
-pub struct Expr {
+pub struct Expr<'src> {
     span: Span,
+    kind: ExprKind<'src>,
+}
+
+#[derive(Debug)]
+pub enum ExprKind<'src> {
+    LiteralInt(&'src str),
+}
+
+impl<'src> Expr<'src> {
+    pub fn parse(tokens: &mut TokenStream<'src>) -> Result<'src, Self> {
+        let first = tokens.next_token()?;
+        let next = tokens.peek();
+        let next_kind = next.as_ref().map(|tok| &tok.kind);
+        match (&first.kind, next_kind) {
+            (TokenKind::LiteralInt(val), Some(TokenKind::Semicolon)) => {
+                // consume the peeked semicolon
+                tokens.consume(TokenKind::Semicolon)?;
+                Ok(Self {
+                    span: first.span,
+                    kind: ExprKind::LiteralInt(val),
+                })
+            }
+            (other, _) => Err(Error::new(
+                first.span.start,
+                first.span.length,
+                ErrorKind::Syntax(format!(
+                    "Invalid token {:?}, expected var or fn",
+                    other,
+                )),
+                tokens.raw(),
+            )),
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::lexer::Tokens;
     use insta::assert_debug_snapshot;
 
     #[test]
     fn empty_top_levels() {
         let src = "task main() {} sub s() {}";
+        let tokens = Tokens::new(src).unwrap();
+        let stream = tokens.iter();
+        let ast = Ast::parse(stream).unwrap();
+        assert_debug_snapshot!(ast);
+    }
+
+    #[test]
+    fn global_var() {
+        let src = "int var;int var2 = 5;";
         let tokens = Tokens::new(src).unwrap();
         let stream = tokens.iter();
         let ast = Ast::parse(stream).unwrap();
