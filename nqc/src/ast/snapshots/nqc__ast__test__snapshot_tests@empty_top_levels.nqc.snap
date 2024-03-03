@@ -1,6 +1,7 @@
 ---
 source: nqc/src/ast/mod.rs
 expression: ast
+input_file: nqc/tests/empty_top_levels.nqc
 ---
 Ast {
     nodes: [

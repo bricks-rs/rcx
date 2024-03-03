@@ -239,23 +239,16 @@ impl<'src> Expr<'src> {
 mod test {
     use super::*;
     use crate::lexer::Tokens;
-    use insta::assert_debug_snapshot;
+    use insta::{assert_debug_snapshot, glob};
 
     #[test]
-    fn empty_top_levels() {
-        let src = "task main() {} sub s() {}";
-        let tokens = Tokens::new(src).unwrap();
-        let stream = tokens.iter();
-        let ast = Ast::parse(stream).unwrap();
-        assert_debug_snapshot!(ast);
-    }
-
-    #[test]
-    fn global_var() {
-        let src = "int var;int var2 = 5;";
-        let tokens = Tokens::new(src).unwrap();
-        let stream = tokens.iter();
-        let ast = Ast::parse(stream).unwrap();
-        assert_debug_snapshot!(ast);
+    fn snapshot_tests() {
+        glob!("../../tests", "*.nqc", |path| {
+            let src = std::fs::read_to_string(path).unwrap();
+            let tokens = Tokens::new(&src).unwrap();
+            let stream = tokens.iter();
+            let ast = Ast::parse(stream).unwrap();
+            assert_debug_snapshot!(ast);
+        });
     }
 }

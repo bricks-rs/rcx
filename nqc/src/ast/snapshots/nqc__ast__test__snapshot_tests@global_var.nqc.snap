@@ -1,6 +1,7 @@
 ---
 source: nqc/src/ast/mod.rs
 expression: ast
+input_file: nqc/tests/global_var.nqc
 ---
 Ast {
     nodes: [
@@ -17,14 +18,14 @@ Ast {
         Var(
             Var {
                 span: Span {
-                    start: 17,
+                    start: 18,
                     length: 1,
                 },
                 ident: "var2",
                 init: Some(
                     Expr {
                         span: Span {
-                            start: 19,
+                            start: 20,
                             length: 1,
                         },
                         kind: LiteralInt(
