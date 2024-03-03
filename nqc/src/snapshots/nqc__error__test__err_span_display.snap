@@ -2,6 +2,6 @@
 source: nqc/src/error.rs
 expression: error.to_string()
 ---
-Syntax error on line 2:
+Syntax("an error") error on line 2:
 2| with an error
            ^^^^^

@@ -1,0 +1,40 @@
+---
+source: nqc/src/ast/mod.rs
+expression: ast
+---
+Ast {
+    nodes: [
+        Task(
+            Task {
+                span: Span {
+                    start: 5,
+                    length: 4,
+                },
+                ident: "main",
+                block: Block {
+                    span: Span {
+                        start: 5,
+                        length: 4,
+                    },
+                    nodes: [],
+                },
+            },
+        ),
+        Sub(
+            Sub {
+                span: Span {
+                    start: 19,
+                    length: 1,
+                },
+                ident: "s",
+                block: Block {
+                    span: Span {
+                        start: 19,
+                        length: 1,
+                    },
+                    nodes: [],
+                },
+            },
+        ),
+    ],
+}

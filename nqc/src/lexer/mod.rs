@@ -1,5 +1,5 @@
 use crate::{Error, ErrorKind, Span};
-use std::str::FromStr;
+use std::{iter::Peekable, str::FromStr};
 
 type Src<'src> =
     std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'src>>>;
@@ -10,7 +10,7 @@ pub struct Token<'src> {
     pub span: Span,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TokenKind<'src> {
     LeftParen,
     RightParen,
@@ -34,9 +34,7 @@ pub enum TokenKind<'src> {
     RShift,
     Semicolon,
     Hash,
-    Space,
     LiteralInt(&'src str),
-    Comment(&'src str),
     Ident(&'src str),
     Kw(Keyword),
 }
@@ -46,7 +44,7 @@ impl<'src> Token<'src> {
         src: &mut Src<'src>,
         line: &mut usize,
         raw: &'src str,
-    ) -> Result<Self, Error<'src>> {
+    ) -> Result<Option<Self>, Error<'src>> {
         // This typically should succeed because we check for eof in the
         // TokenStream iterator
         let (start, chr) =
@@ -86,8 +84,7 @@ impl<'src> Token<'src> {
                         }
                     };
                     *line += 1;
-                    span_length = newline_idx - start;
-                    TokenKind::Comment(&raw[start..start + span_length])
+                    return Ok(None);
                 } else {
                     TokenKind::Divide
                 }
@@ -147,7 +144,7 @@ impl<'src> Token<'src> {
                     }
                     src.next();
                 }
-                TokenKind::Space
+                return Ok(None);
             }
             s if s.is_ascii_alphabetic() || s == '_' => {
                 // consume ident
@@ -182,25 +179,67 @@ impl<'src> Token<'src> {
                 }
                 TokenKind::LiteralInt(&raw[start..start + span_length])
             }
-            _ => Err(Error::new(start, 1, ErrorKind::Syntax, raw))?,
+            other => Err(Error::new(
+                start,
+                1,
+                ErrorKind::Syntax(format!("Unexpected character `{other}`")),
+                raw,
+            ))?,
         };
-        Ok(Token {
+        Ok(Some(Token {
             kind,
             span: Span {
                 start,
                 length: span_length,
             },
-        })
+        }))
     }
 }
 
-#[derive(Debug, PartialEq, Eq, strum::EnumString)]
+#[derive(Clone, Debug, PartialEq, Eq, strum::EnumString)]
 #[strum(serialize_all = "lowercase")]
 pub enum Keyword {
-    While,
-    Task,
-    Sub,
+    #[strum(serialize = "_event_src")]
+    EventSrc,
+    #[strum(serialize = "__nolist")]
+    Nolist,
+    #[strum(serialize = "__res")]
+    Res,
+    #[strum(serialize = "__sensor")]
+    Sensor,
+    #[strum(serialize = "__taskid")]
+    Taskid,
+    #[strum(serialize = "__type")]
+    Type,
+    Abs,
+    Acquire,
+    Asm,
+    Break,
+    Case,
+    Catch,
+    Const,
+    Continue,
+    Default,
+    Do,
+    Else,
+    False,
     For,
+    Goto,
+    If,
+    Inline,
+    Int,
+    Monitor,
+    Repeat,
+    Return,
+    Sign,
+    Start,
+    Stop,
+    Sub,
+    Switch,
+    Task,
+    True,
+    Void,
+    While,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -208,28 +247,141 @@ pub enum Type {
     Int,
 }
 
-pub struct TokenStream<'src> {
+// pub struct TokenStream<'src> {
+//     src: Src<'src>,
+//     raw: &'src str,
+//     line: usize,
+// }
+
+// impl<'src> TokenStream<'src> {
+//     pub fn new(src: &'src str) -> Self {
+//         Self {
+//             src: src.chars().enumerate().peekable(),
+//             raw: src,
+//             line: 0,
+//         }
+//     }
+
+//     pub fn collect(self) -> Result<Vec<Token<'src>>, Vec<Error<'src>>> {
+//         let mut tokens = Vec::new();
+//         let mut errors = Vec::new();
+//         for token in self {
+//             match token {
+//                 Ok(token) => tokens.push(token),
+//                 Err(error) => errors.push(error),
+//             }
+//         }
+//         if errors.is_empty() {
+//             Ok(tokens)
+//         } else {
+//             Err(errors)
+//         }
+//     }
+// }
+
+// impl<'src> Iterator for TokenStream<'src> {
+//     type Item = Result<Token<'src>, Error<'src>>;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.src.peek()?;
+//         Some(Token::parse(&mut self.src, &mut self.line, self.raw))
+//     }
+// }
+
+pub struct Tokens<'src> {
     src: Src<'src>,
     raw: &'src str,
-    line: usize,
+    tokens: Vec<Token<'src>>,
 }
 
-impl<'src> TokenStream<'src> {
-    pub fn new(src: &'src str) -> Self {
-        Self {
-            src: src.chars().enumerate().peekable(),
-            raw: src,
-            line: 0,
+impl<'src> Tokens<'src> {
+    pub fn new(src: &'src str) -> Result<Self, Vec<Error<'src>>> {
+        let raw = src;
+        let mut src = src.chars().enumerate().peekable();
+        let mut line = 0;
+        let mut tokens = Vec::new();
+        let mut errors = Vec::new();
+        loop {
+            if src.peek().is_none() {
+                break;
+            }
+            let token = Token::parse(&mut src, &mut line, raw);
+            match token {
+                Ok(Some(token)) => tokens.push(token),
+                Ok(None) => {}
+                Err(error) => errors.push(error),
+            }
+        }
+        if errors.is_empty() {
+            Ok(Self { src, raw, tokens })
+        } else {
+            Err(errors)
+        }
+    }
+
+    pub fn iter<'tokens: 'src>(&'tokens self) -> TokenStream<'src> {
+        TokenStream {
+            raw: self.raw,
+            iter: self.tokens.iter().peekable(),
         }
     }
 }
 
-impl<'src> Iterator for TokenStream<'src> {
-    type Item = Result<Token<'src>, Error<'src>>;
+// impl<'src> Tokens<'src> {
+//     pub fn stream(&self) -> TokenStream {
+//         TokenStream {
+//             iter: self.tokens.iter().peekable(),
+//         }
+//     }
+// }
 
+#[derive(Debug)]
+pub struct TokenStream<'src> {
+    raw: &'src str,
+    iter: Peekable<std::slice::Iter<'src, Token<'src>>>,
+}
+
+impl<'src> TokenStream<'src> {
+    pub fn peek(&mut self) -> Option<&'src Token<'src>> {
+        self.iter.peek().copied()
+    }
+
+    #[track_caller]
+    pub fn next_token(&mut self) -> Result<&'src Token<'src>, Error<'src>> {
+        let caller = std::panic::Location::caller();
+        self.iter.next().ok_or_else(|| {
+            println!("Line {caller:?}");
+            Error::new(0, 0, ErrorKind::Eof, self.raw)
+        })
+    }
+
+    pub fn consume(&mut self, expected: TokenKind) -> Result<(), Error<'src>> {
+        let tok = self.next_token()?;
+        if tok.kind == expected {
+            Ok(())
+        } else {
+            let span = tok.span;
+            Err(Error::new(
+                span.start,
+                span.length,
+                ErrorKind::Syntax(format!(
+                    "Expected `{:?}`, got `{:?}`",
+                    expected, tok.kind
+                )),
+                self.raw,
+            ))
+        }
+    }
+
+    pub fn eof(&mut self) -> bool {
+        self.peek().is_none()
+    }
+}
+
+impl<'src> Iterator for TokenStream<'src> {
+    type Item = &'src Token<'src>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.src.peek()?;
-        Some(Token::parse(&mut self.src, &mut self.line, self.raw))
+        self.iter.next()
     }
 }
 
@@ -245,9 +397,10 @@ mod test {
         let src = "()[]{}+-*/===;.<<>><=>=while<>#_some_var
         //this is a comment
         //another comment";
-        let stream = TokenStream::new(src)
-            .inspect(|maybe_token| println!("{maybe_token:?}"))
-            .map(|token| token.unwrap().kind)
+        let tokens = Tokens::new(src).unwrap();
+        let stream = tokens
+            .iter()
+            .map(|token| token.kind.clone())
             .collect::<Vec<_>>();
         let expected = &[
             LeftParen,
@@ -273,12 +426,8 @@ mod test {
             Gt,
             Hash,
             Ident("_some_var"),
-            Space,
-            Comment("//this is a comment"),
-            Space,
-            Comment("//another comment"),
         ];
-        assert_eq!(stream, expected);
+        assert_eq!(expected, stream.as_slice());
     }
 
     #[test]
@@ -291,48 +440,41 @@ mod test {
             Wait(100);
             Off(OUT_A);
         }";
-        let stream = TokenStream::new(src)
-            .inspect(|maybe_token| println!("{maybe_token:?}"))
-            .map(|token| token.unwrap().kind)
+        let tokens = Tokens::new(src).unwrap();
+        let stream = tokens
+            .iter()
+            .map(|token| token.kind.clone())
             .collect::<Vec<_>>();
         let expected = &[
             Kw(Keyword::Task),
-            Space,
             Ident("main"),
             LeftParen,
             RightParen,
-            Space,
             LeftBrace,
-            Space,
             Ident("SetPower"),
             LeftParen,
             Ident("OUT_A"),
             Comma,
-            Space,
             LiteralInt("50"),
             RightParen,
             Semicolon,
-            Space,
             Ident("OnFwd"),
             LeftParen,
             Ident("OUT_A"),
             RightParen,
             Semicolon,
-            Space,
             Ident("Wait"),
             LeftParen,
             LiteralInt("100"),
             RightParen,
             Semicolon,
-            Space,
             Ident("Off"),
             LeftParen,
             Ident("OUT_A"),
             RightParen,
             Semicolon,
-            Space,
             RightBrace,
         ];
-        assert_eq!(stream, expected);
+        assert_eq!(expected, stream.as_slice());
     }
 }

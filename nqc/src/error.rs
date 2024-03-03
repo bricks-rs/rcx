@@ -14,7 +14,7 @@ impl<'src> std::error::Error for Error<'src> {}
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    Syntax,
+    Syntax(String),
     Eof,
 }
 
@@ -87,7 +87,7 @@ somewhere in it";
             length: 5,
         };
         let error = Error {
-            kind: ErrorKind::Syntax,
+            kind: ErrorKind::Syntax("an error".to_string()),
             span,
             raw: src,
         };
