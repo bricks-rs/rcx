@@ -46,7 +46,7 @@ impl<'src> TopLevelNode<'src> {
             TokenKind::Kw(Keyword::Task) => Self::Task(Task::parse(tokens)?),
             TokenKind::Kw(Keyword::Sub) => Self::Sub(Sub::parse(tokens)?),
             TokenKind::Kw(Keyword::Int) => {
-                // could be var decl or function decl
+                // variable declaration - only functions are void functions
                 let ident_token = tokens.next_token()?;
                 let TokenKind::Ident(ident) = ident_token.kind else {
                     return Err(Error::new(
@@ -60,7 +60,7 @@ impl<'src> TopLevelNode<'src> {
                     ));
                 };
 
-                // either 'int var = 5;', 'int var;', or 'int fn(){}'
+                // either 'int var = 5;', 'int var;'
                 let eq_or_paren = tokens.next_token()?;
                 match &eq_or_paren.kind {
                     TokenKind::Semicolon => Self::Var(Var {
@@ -73,7 +73,16 @@ impl<'src> TopLevelNode<'src> {
                         ident,
                         init: Some(Expr::parse(tokens)?),
                     }),
-                    TokenKind::LeftParen => todo!("fn decl"),
+                    TokenKind::LeftParen => {
+                        return Err(Error::new(
+                            ident_token.span.start,
+                            ident_token.span.length,
+                            ErrorKind::Syntax(
+                                "Only void functions are supported".to_string(),
+                            ),
+                            tokens.raw(),
+                        ));
+                    }
                     other => {
                         return Err(Error::new(
                             ident_token.span.start,
@@ -243,12 +252,23 @@ mod test {
 
     #[test]
     fn snapshot_tests() {
-        glob!("../../tests", "*.nqc", |path| {
+        glob!("../../tests/good", "*.nqc", |path| {
             let src = std::fs::read_to_string(path).unwrap();
             let tokens = Tokens::new(&src).unwrap();
             let stream = tokens.iter();
             let ast = Ast::parse(stream).unwrap();
             assert_debug_snapshot!(ast);
+        });
+    }
+
+    #[test]
+    fn error_snapshot_tests() {
+        glob!("../../tests/bad", "*.nqc", |path| {
+            let src = std::fs::read_to_string(path).unwrap();
+            let tokens = Tokens::new(&src).unwrap();
+            let stream = tokens.iter();
+            let err = Ast::parse(stream).unwrap_err();
+            assert_debug_snapshot!(err);
         });
     }
 }

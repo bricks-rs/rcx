@@ -1,0 +1,15 @@
+---
+source: nqc/src/ast/mod.rs
+expression: err
+input_file: nqc/tests/bad/int_fn.nqc
+---
+Error {
+    kind: Syntax(
+        "Only void functions are supported",
+    ),
+    span: Span {
+        start: 4,
+        length: 2,
+    },
+    raw: "int fn() {}\n",
+}
