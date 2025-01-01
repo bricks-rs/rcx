@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod chumsky_parser;
 pub mod error;
 pub mod lexer;
 
