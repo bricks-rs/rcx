@@ -1,38 +1,200 @@
 ---
 source: nqc/src/ast/mod.rs
 expression: ast
-input_file: nqc/tests/global_var.nqc
+input_file: nqc/tests/good/global_var.nqc
 ---
 Ast {
     nodes: [
-        Var(
-            Var {
-                span: Span {
-                    start: 7,
-                    length: 1,
-                },
-                ident: "var",
-                init: None,
-            },
-        ),
-        Var(
-            Var {
-                span: Span {
-                    start: 18,
-                    length: 1,
-                },
-                ident: "var2",
-                init: Some(
-                    Expr {
+        VarList(
+            VarList {
+                list: [
+                    Var {
                         span: Span {
-                            start: 20,
+                            start: 7,
                             length: 1,
                         },
-                        kind: LiteralInt(
-                            "5",
+                        ident: "var",
+                        init: None,
+                    },
+                ],
+            },
+        ),
+        VarList(
+            VarList {
+                list: [
+                    Var {
+                        span: Span {
+                            start: 18,
+                            length: 1,
+                        },
+                        ident: "var2",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 20,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "5",
+                                ),
+                            },
                         ),
                     },
-                ),
+                ],
+            },
+        ),
+        VarList(
+            VarList {
+                list: [
+                    Var {
+                        span: Span {
+                            start: 31,
+                            length: 1,
+                        },
+                        ident: "var1",
+                        init: None,
+                    },
+                    Var {
+                        span: Span {
+                            start: 37,
+                            length: 1,
+                        },
+                        ident: "var2",
+                        init: None,
+                    },
+                ],
+            },
+        ),
+        VarList(
+            VarList {
+                list: [
+                    Var {
+                        span: Span {
+                            start: 48,
+                            length: 1,
+                        },
+                        ident: "var1",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 50,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "1",
+                                ),
+                            },
+                        ),
+                    },
+                    Var {
+                        span: Span {
+                            start: 57,
+                            length: 1,
+                        },
+                        ident: "var2",
+                        init: None,
+                    },
+                ],
+            },
+        ),
+        VarList(
+            VarList {
+                list: [
+                    Var {
+                        span: Span {
+                            start: 67,
+                            length: 1,
+                        },
+                        ident: "var1",
+                        init: None,
+                    },
+                    Var {
+                        span: Span {
+                            start: 74,
+                            length: 1,
+                        },
+                        ident: "var2",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 76,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "2",
+                                ),
+                            },
+                        ),
+                    },
+                ],
+            },
+        ),
+        VarList(
+            VarList {
+                list: [
+                    Var {
+                        span: Span {
+                            start: 88,
+                            length: 1,
+                        },
+                        ident: "var1",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 90,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "1",
+                                ),
+                            },
+                        ),
+                    },
+                    Var {
+                        span: Span {
+                            start: 98,
+                            length: 1,
+                        },
+                        ident: "var2",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 100,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "2",
+                                ),
+                            },
+                        ),
+                    },
+                    Var {
+                        span: Span {
+                            start: 107,
+                            length: 1,
+                        },
+                        ident: "var3",
+                        init: None,
+                    },
+                    Var {
+                        span: Span {
+                            start: 114,
+                            length: 1,
+                        },
+                        ident: "var4",
+                        init: Some(
+                            Expr {
+                                span: Span {
+                                    start: 116,
+                                    length: 1,
+                                },
+                                kind: LiteralInt(
+                                    "4",
+                                ),
+                            },
+                        ),
+                    },
+                ],
             },
         ),
     ],

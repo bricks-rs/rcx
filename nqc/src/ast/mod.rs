@@ -7,12 +7,19 @@ use crate::{
 fn get_ident<'src>(
     tokens: &mut TokenStream<'src>,
 ) -> Result<'src, (&'src Token<'src>, &'src str)> {
-    match tokens.next() {
-        None => panic!(),
-        Some(token) => match &token.kind {
-            TokenKind::Ident(ident) => Ok((token, ident)),
-            other => panic!("Unhandled token '{:?}'", other),
-        },
+    let token = tokens.next_token()?;
+
+    match &token.kind {
+        TokenKind::Ident(ident) => Ok((token, ident)),
+        _ => Err(Error::new(
+            token.span.start,
+            token.span.length,
+            ErrorKind::Syntax(format!(
+                "invalid token {:?}, expected ident",
+                token.kind
+            )),
+            tokens.raw().into(),
+        )),
     }
 }
 
@@ -35,6 +42,7 @@ impl<'src> Ast<'src> {
 #[derive(Debug)]
 pub enum TopLevelNode<'src> {
     Var(Var<'src>),
+    VarList(VarList<'src>),
     Task(Task<'src>),
     Sub(Sub<'src>),
 }
@@ -46,55 +54,7 @@ impl<'src> TopLevelNode<'src> {
             TokenKind::Kw(Keyword::Task) => Self::Task(Task::parse(tokens)?),
             TokenKind::Kw(Keyword::Sub) => Self::Sub(Sub::parse(tokens)?),
             TokenKind::Kw(Keyword::Int) => {
-                // variable declaration - only functions are void functions
-                let ident_token = tokens.next_token()?;
-                let TokenKind::Ident(ident) = ident_token.kind else {
-                    return Err(Error::new(
-                        ident_token.span.start,
-                        ident_token.span.length,
-                        ErrorKind::Syntax(format!(
-                            "invalid token {:?}, expected ident",
-                            ident_token.kind
-                        )),
-                        tokens.raw().into(),
-                    ));
-                };
-
-                // either 'int var = 5;', 'int var;'
-                let eq_or_paren = tokens.next_token()?;
-                match &eq_or_paren.kind {
-                    TokenKind::Semicolon => Self::Var(Var {
-                        span: eq_or_paren.span,
-                        ident,
-                        init: None,
-                    }),
-                    TokenKind::Eq => Self::Var(Var {
-                        span: eq_or_paren.span,
-                        ident,
-                        init: Some(Expr::parse(tokens)?),
-                    }),
-                    TokenKind::LeftParen => {
-                        return Err(Error::new(
-                            ident_token.span.start,
-                            ident_token.span.length,
-                            ErrorKind::Syntax(
-                                "only void functions are supported".to_string(),
-                            ),
-                            tokens.raw().into(),
-                        ));
-                    }
-                    other => {
-                        return Err(Error::new(
-                            ident_token.span.start,
-                            ident_token.span.length,
-                            ErrorKind::Syntax(format!(
-                                "invalid token {:?}, expected var or fn",
-                                other,
-                            )),
-                            tokens.raw().into(),
-                        ));
-                    }
-                }
+                Self::VarList(VarList::parse(tokens)?)
             }
             other => panic!("Unhandled token '{:?}'", other),
         })
@@ -106,6 +66,93 @@ pub struct Var<'src> {
     pub span: Span,
     pub ident: &'src str,
     pub init: Option<Expr<'src>>,
+}
+
+#[derive(Debug)]
+pub struct VarList<'src> {
+    pub list: Vec<Var<'src>>,
+}
+
+impl<'src> VarList<'src> {
+    pub fn parse(tokens: &mut TokenStream<'src>) -> Result<'src, Self> {
+        let mut list = Vec::new();
+
+        loop {
+            // variable declaration - only functions are void functions
+            let (ident_token, ident) = get_ident(tokens)?;
+
+            // either 'int var = 5;', 'int var;'
+            let eq_or_paren = tokens.next_token()?;
+            match &eq_or_paren.kind {
+                TokenKind::Semicolon => {
+                    list.push(Var {
+                        span: eq_or_paren.span,
+                        ident,
+                        init: None,
+                    });
+                    break;
+                }
+                TokenKind::Eq => {
+                    list.push(Var {
+                        span: eq_or_paren.span,
+                        ident,
+                        init: Some(Expr::parse(tokens)?),
+                    });
+                    // check for semicolon or comma after expr
+                    let next = tokens.next_token()?;
+                    match next.kind {
+                        TokenKind::Semicolon => break,
+                        TokenKind::Comma => continue,
+                        _ => {
+                            return Err(Error::new(
+                                next.span.start,
+                                next.span.length,
+                                ErrorKind::Syntax(
+                                    "expected semicolon or comma \
+                                    following init expr"
+                                        .to_string(),
+                                ),
+                                tokens.raw().into(),
+                            ))
+                        }
+                    }
+                }
+                TokenKind::Comma => {
+                    // int var1, var2, var3;
+                    //
+                    // Push the current uninitialised var and keep going
+                    list.push(Var {
+                        span: eq_or_paren.span,
+                        ident,
+                        init: None,
+                    });
+                }
+                TokenKind::LeftParen => {
+                    return Err(Error::new(
+                        ident_token.span.start,
+                        ident_token.span.length,
+                        ErrorKind::Syntax(
+                            "only void functions are supported".to_string(),
+                        ),
+                        tokens.raw().into(),
+                    ));
+                }
+                other => {
+                    return Err(Error::new(
+                        eq_or_paren.span.start,
+                        eq_or_paren.span.length,
+                        ErrorKind::Syntax(format!(
+                            "invalid token {:?}, expected var or fn",
+                            other,
+                        )),
+                        tokens.raw().into(),
+                    ));
+                }
+            }
+        }
+
+        Ok(Self { list })
+    }
 }
 
 #[derive(Debug)]
@@ -223,9 +270,12 @@ impl<'src> Expr<'src> {
         let next = tokens.peek();
         let next_kind = next.as_ref().map(|tok| &tok.kind);
         match (&first.kind, next_kind) {
-            (TokenKind::LiteralInt(val), Some(TokenKind::Semicolon)) => {
-                // consume the peeked semicolon
-                tokens.consume(TokenKind::Semicolon)?;
+            (
+                TokenKind::LiteralInt(val),
+                Some(TokenKind::Semicolon | TokenKind::Comma),
+            ) => {
+                // don't consume the peeked semicolon
+                // tokens.consume(TokenKind::Semicolon)?;
                 Ok(Self {
                     span: first.span,
                     kind: ExprKind::LiteralInt(val),
