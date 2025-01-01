@@ -1,3 +1,5 @@
+use crate::lexer::Token;
+use crate::lexer::TokenStream;
 use miette::{Diagnostic, SourceSpan};
 use std::{
     fmt,
@@ -45,6 +47,19 @@ impl Error {
             span: (start, length).into(),
             raw,
         }
+    }
+
+    pub fn from_token(
+        token: &Token,
+        tokens: &TokenStream,
+        err: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            token.span.start,
+            token.span.length,
+            ErrorKind::Syntax(err.into()),
+            tokens.raw().into(),
+        )
     }
 }
 

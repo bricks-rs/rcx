@@ -249,6 +249,7 @@ pub enum Type {
 }
 
 pub struct Tokens<'src> {
+    #[expect(unused)]
     src: Src<'src>,
     raw: &'src str,
     tokens: Vec<Token<'src>>,

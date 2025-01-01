@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ErrorKind, Result},
+    error::{Error, Result},
     lexer::{Keyword, Token, TokenKind, TokenStream},
     Span,
 };
@@ -11,14 +11,10 @@ fn get_ident<'src>(
 
     match &token.kind {
         TokenKind::Ident(ident) => Ok((token, ident)),
-        _ => Err(Error::new(
-            token.span.start,
-            token.span.length,
-            ErrorKind::Syntax(format!(
-                "invalid token {:?}, expected ident",
-                token.kind
-            )),
-            tokens.raw().into(),
+        _ => Err(Error::from_token(
+            token,
+            tokens,
+            format!("invalid token {:?}, expected ident", token.kind),
         )),
     }
 }
@@ -104,15 +100,11 @@ impl<'src> VarList<'src> {
                         TokenKind::Semicolon => break,
                         TokenKind::Comma => continue,
                         _ => {
-                            return Err(Error::new(
-                                next.span.start,
-                                next.span.length,
-                                ErrorKind::Syntax(
-                                    "expected semicolon or comma \
-                                    following init expr"
-                                        .to_string(),
-                                ),
-                                tokens.raw().into(),
+                            return Err(Error::from_token(
+                                next,
+                                tokens,
+                                "expected semicolon or comma \
+                                    following init expr",
                             ))
                         }
                     }
@@ -128,24 +120,20 @@ impl<'src> VarList<'src> {
                     });
                 }
                 TokenKind::LeftParen => {
-                    return Err(Error::new(
-                        ident_token.span.start,
-                        ident_token.span.length,
-                        ErrorKind::Syntax(
-                            "only void functions are supported".to_string(),
-                        ),
-                        tokens.raw().into(),
+                    return Err(Error::from_token(
+                        ident_token,
+                        tokens,
+                        "only void functions are supported",
                     ));
                 }
                 other => {
-                    return Err(Error::new(
-                        eq_or_paren.span.start,
-                        eq_or_paren.span.length,
-                        ErrorKind::Syntax(format!(
+                    return Err(Error::from_token(
+                        eq_or_paren,
+                        tokens,
+                        format!(
                             "invalid token {:?}, expected var or fn",
                             other,
-                        )),
-                        tokens.raw().into(),
+                        ),
                     ));
                 }
             }
@@ -247,7 +235,15 @@ impl<'src> Stmt<'src> {
     ) -> Result<'src, Self> {
         let token = tokens.next_token()?;
         match &token.kind {
-            TokenKind::Kw(Keyword::Int) => panic!(),
+            TokenKind::Kw(Keyword::Int) => Err(Error::from_token(
+                token,
+                tokens,
+                "variable declaration is not permitted in this context",
+            )),
+            TokenKind::Ident(_ident) => {
+                // var lvalue or func call
+                todo!()
+            }
             other => panic!("Unhandled token '{:?}'", other),
         }
     }
@@ -255,8 +251,8 @@ impl<'src> Stmt<'src> {
 
 #[derive(Debug)]
 pub struct Expr<'src> {
-    span: Span,
-    kind: ExprKind<'src>,
+    pub span: Span,
+    pub kind: ExprKind<'src>,
 }
 
 #[derive(Debug)]
@@ -281,14 +277,10 @@ impl<'src> Expr<'src> {
                     kind: ExprKind::LiteralInt(val),
                 })
             }
-            (other, _) => Err(Error::new(
-                first.span.start,
-                first.span.length,
-                ErrorKind::Syntax(format!(
-                    "Invalid token {:?}, expected var or fn",
-                    other,
-                )),
-                tokens.raw().into(),
+            (other, _) => Err(Error::from_token(
+                first,
+                tokens,
+                format!("Invalid token {:?}, expected var or fn", other,),
             )),
         }
     }
@@ -313,6 +305,7 @@ mod test {
 
     #[test]
     fn error_snapshot_tests() {
+        std::env::set_var("NO_COLOR", "true");
         glob!("../../tests/bad", "*.nqc", |path| {
             let src = std::fs::read_to_string(path).unwrap();
             let tokens = Tokens::new(&src).unwrap();
