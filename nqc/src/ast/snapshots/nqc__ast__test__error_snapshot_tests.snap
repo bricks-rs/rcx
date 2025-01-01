@@ -5,10 +5,12 @@ input_file: nqc/tests/bad/int_fn.nqc
 ---
 Error {
     kind: Syntax(
-        "Only void functions are supported",
+        "only void functions are supported",
     ),
-    span: Span {
-        start: 4,
+    span: SourceSpan {
+        offset: SourceOffset(
+            4,
+        ),
         length: 2,
     },
     raw: "int fn() {}\n",

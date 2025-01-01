@@ -53,10 +53,10 @@ impl<'src> TopLevelNode<'src> {
                         ident_token.span.start,
                         ident_token.span.length,
                         ErrorKind::Syntax(format!(
-                            "Invalid token {:?}, expected ident",
+                            "invalid token {:?}, expected ident",
                             ident_token.kind
                         )),
-                        tokens.raw(),
+                        tokens.raw().into(),
                     ));
                 };
 
@@ -78,9 +78,9 @@ impl<'src> TopLevelNode<'src> {
                             ident_token.span.start,
                             ident_token.span.length,
                             ErrorKind::Syntax(
-                                "Only void functions are supported".to_string(),
+                                "only void functions are supported".to_string(),
                             ),
-                            tokens.raw(),
+                            tokens.raw().into(),
                         ));
                     }
                     other => {
@@ -88,10 +88,10 @@ impl<'src> TopLevelNode<'src> {
                             ident_token.span.start,
                             ident_token.span.length,
                             ErrorKind::Syntax(format!(
-                                "Invalid token {:?}, expected var or fn",
+                                "invalid token {:?}, expected var or fn",
                                 other,
                             )),
-                            tokens.raw(),
+                            tokens.raw().into(),
                         ));
                     }
                 }
@@ -238,7 +238,7 @@ impl<'src> Expr<'src> {
                     "Invalid token {:?}, expected var or fn",
                     other,
                 )),
-                tokens.raw(),
+                tokens.raw().into(),
             )),
         }
     }
@@ -256,7 +256,7 @@ mod test {
             let src = std::fs::read_to_string(path).unwrap();
             let tokens = Tokens::new(&src).unwrap();
             let stream = tokens.iter();
-            let ast = Ast::parse(stream).unwrap();
+            let ast = Ast::parse(stream).map_err(miette::Report::from).unwrap();
             assert_debug_snapshot!(ast);
         });
     }

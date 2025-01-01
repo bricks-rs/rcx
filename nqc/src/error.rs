@@ -1,16 +1,22 @@
-use crate::Span;
-use std::fmt::{self, Display};
+use miette::{Diagnostic, SourceSpan};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+};
 
-pub type Result<'src, T> = std::result::Result<T, Error<'src>>;
+pub type Result<'src, T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
-pub struct Error<'src> {
+#[derive(thiserror::Error, Debug, Diagnostic)]
+#[error("error")]
+pub struct Error {
     pub kind: ErrorKind,
-    pub span: Span,
-    raw: &'src str,
+    #[label("{kind}")]
+    pub span: SourceSpan,
+    #[source_code]
+    raw: String,
 }
 
-impl<'src> std::error::Error for Error<'src> {}
+// impl<'src> std::error::Error for Eror<'src> {}
 
 #[derive(Debug)]
 pub enum ErrorKind {
@@ -18,57 +24,27 @@ pub enum ErrorKind {
     Eof,
 }
 
-impl<'src> Error<'src> {
-    pub fn new(
-        start: usize,
-        length: usize,
-        kind: ErrorKind,
-        raw: &'src str,
-    ) -> Self {
-        Self {
-            kind,
-            span: Span { start, length },
-            raw,
+impl Display for ErrorKind {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::Syntax(err) => write!(fmt, "Syntax error: {err}"),
+            Self::Eof => write!(fmt, "End of file reached"),
         }
     }
 }
 
-impl Display for Error<'_> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let mut line_start = 0;
-        let mut line_count = 1;
-        for (idx, chr) in self.raw.chars().enumerate() {
-            if idx >= self.span.start {
-                break;
-            }
-            if chr == '\n' {
-                line_start = idx + 1;
-                line_count += 1;
-            }
+impl Error {
+    pub fn new(
+        start: usize,
+        length: usize,
+        kind: ErrorKind,
+        raw: String,
+    ) -> Self {
+        Self {
+            kind,
+            span: (start, length).into(),
+            raw,
         }
-        // find end of current line
-        let line_end = self
-            .raw
-            .chars()
-            .enumerate()
-            .skip(line_start)
-            .find(|(_idx, chr)| *chr == '\n')
-            .map(|(idx, _chr)| idx)
-            .unwrap_or(self.raw.len());
-
-        // write the error message
-        let line_count_str = line_count.to_string();
-        writeln!(fmt, "{:?} error on line {}:", self.kind, line_count)?;
-        writeln!(fmt, "{}| {}", line_count, &self.raw[line_start..line_end])?;
-        // write the span highlight
-        let width = line_count_str.len() + 2 + self.span.start - line_start;
-        dbg!(width);
-        let length = self.span.length;
-        // first arg pads with spaces up to the span position
-        // second arg repeats the '^' character for the span length
-        writeln!(fmt, "{:>width$}{:^<length$}", "", "")?;
-
-        Ok(())
     }
 }
 
@@ -82,15 +58,13 @@ mod test {
         let src = "some text
 with an error
 somewhere in it";
-        let span = Span {
-            start: 18,
-            length: 5,
-        };
+
         let error = Error {
             kind: ErrorKind::Syntax("an error".to_string()),
-            span,
-            raw: src,
+            span: (18, 5).into(),
+            raw: src.into(),
         };
-        assert_snapshot!(error.to_string());
+        let report = miette::Report::from(error);
+        assert_snapshot!(format!("{report:?}"));
     }
 }

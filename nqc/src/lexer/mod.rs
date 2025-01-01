@@ -44,11 +44,12 @@ impl<'src> Token<'src> {
         src: &mut Src<'src>,
         line: &mut usize,
         raw: &'src str,
-    ) -> Result<Option<Self>, Error<'src>> {
+    ) -> Result<Option<Self>, Error> {
         // This typically should succeed because we check for eof in the
         // TokenStream iterator
         let (start, chr) =
-            src.next().ok_or(Error::new(0, 0, ErrorKind::Eof, raw))?;
+            src.next()
+                .ok_or(Error::new(0, 0, ErrorKind::Eof, raw.into()))?;
 
         let mut span_length = 1;
         let kind = match chr {
@@ -68,7 +69,7 @@ impl<'src> Token<'src> {
                 // char
                 if src
                     .peek()
-                    .ok_or(Error::new(start, 0, ErrorKind::Eof, raw))?
+                    .ok_or(Error::new(start, 0, ErrorKind::Eof, raw.into()))?
                     .1
                     == '/'
                 {
@@ -183,7 +184,7 @@ impl<'src> Token<'src> {
                 start,
                 1,
                 ErrorKind::Syntax(format!("Unexpected character `{other}`")),
-                raw,
+                raw.into(),
             ))?,
         };
         Ok(Some(Token {
@@ -254,7 +255,7 @@ pub struct Tokens<'src> {
 }
 
 impl<'src> Tokens<'src> {
-    pub fn new(src: &'src str) -> Result<Self, Vec<Error<'src>>> {
+    pub fn new(src: &'src str) -> Result<Self, Vec<Error>> {
         let raw = src;
         let mut src = src.chars().enumerate().peekable();
         let mut line = 0;
@@ -298,15 +299,15 @@ impl<'src> TokenStream<'src> {
     }
 
     #[track_caller]
-    pub fn next_token(&mut self) -> Result<&'src Token<'src>, Error<'src>> {
+    pub fn next_token(&mut self) -> Result<&'src Token<'src>, Error> {
         let caller = std::panic::Location::caller();
         self.iter.next().ok_or_else(|| {
             println!("Line {caller:?}");
-            Error::new(0, 0, ErrorKind::Eof, self.raw)
+            Error::new(0, 0, ErrorKind::Eof, self.raw.into())
         })
     }
 
-    pub fn consume(&mut self, expected: TokenKind) -> Result<(), Error<'src>> {
+    pub fn consume(&mut self, expected: TokenKind) -> Result<(), Error> {
         let tok = self.next_token()?;
         if tok.kind == expected {
             Ok(())
@@ -319,7 +320,7 @@ impl<'src> TokenStream<'src> {
                     "Expected `{:?}`, got `{:?}`",
                     expected, tok.kind
                 )),
-                self.raw,
+                self.raw.into(),
             ))
         }
     }

@@ -1,7 +1,12 @@
 ---
 source: nqc/src/error.rs
-expression: error.to_string()
+expression: "format!(\"{report:?}\")"
 ---
-Syntax("an error") error on line 2:
-2| with an error
-           ^^^^^
+  × error
+   ╭─[2:9]
+ 1 │ some text
+ 2 │ with an error
+   ·         ──┬──
+   ·           ╰── Syntax error: an error
+ 3 │ somewhere in it
+   ╰────
