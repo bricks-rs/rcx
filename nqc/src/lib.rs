@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod chumsky_parser;
 pub mod error;
+pub mod lalrpop_version;
 pub mod lexer;
 
 pub use error::{Error, ErrorKind};

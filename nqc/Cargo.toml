@@ -13,6 +13,7 @@ description = "[wip] Compiler for the NQC programming language for Lego RCX"
 [dependencies]
 ariadne = "0.5.0"
 chumsky = "1.0.0-alpha.7"
+lalrpop-util = { version = "0.22.0", features = ["lexer"] }
 miette = "7.4.0"
 strum = { version = "0.26.1", features = ["derive"] }
 thiserror = "2.0.9"
@@ -21,3 +22,6 @@ thiserror = "2.0.9"
 insta = { version = "1.35.1", features = ["glob"] }
 miette = { version = "7.4.0", features = ["fancy"] }
 pretty_assertions = "1.4.0"
+
+[build-dependencies]
+lalrpop = "0.22.0"

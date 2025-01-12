@@ -1,0 +1,37 @@
+use std::str::FromStr;
+use crate::lalrpop_version::ast::{Expr, BinaryOp};
+
+grammar;
+
+pub Expr: Box<Expr<'input>> = {
+    AddSubExpr,
+};
+
+AddSubExpr: Box<Expr<'input>> = {
+    AddSubExpr AddSubOp MulDivExpr => Box::new(Expr::BinaryOp(<>)),
+    MulDivExpr,
+}
+
+pub AddSubOp: BinaryOp = {
+    "+" => BinaryOp::Add,
+    "-" => BinaryOp::Sub,
+};
+
+MulDivExpr: Box<Expr<'input>> = {
+    MulDivExpr MulDivOp Term => Box::new(Expr::BinaryOp(<>)),
+    Term,
+}
+
+MulDivOp: BinaryOp = {
+    "*" => BinaryOp::Mul,
+    "/" => BinaryOp::Div,
+}
+
+pub Term: Box<Expr<'input>> = {
+    Num => Box::new(Expr::Literal(<>)),
+    Ident => Box::new(Expr::Ident(<>)),
+    "(" <Expr> ")",
+};
+
+Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();
+Ident: &'input str = r"[_a-zA-Z][_a-zA-Z0-9]*";
