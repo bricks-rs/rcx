@@ -10,6 +10,12 @@ pub mod ast {
     use std::fmt::{Display, Formatter};
 
     #[derive(Debug, PartialEq, Eq)]
+    pub enum Stmt<'input> {
+        Expr(Box<Expr<'input>>),
+        FuncDecl(&'input str, Box<Expr<'input>>),
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
     pub enum Expr<'input> {
         Literal(i32),
         Ident(&'input str),
@@ -23,7 +29,9 @@ pub mod ast {
                 Self::Ident(ident) => fmt.write_str(ident),
                 Self::BinaryOp(left, op, right) => {
                     write!(fmt, "{left} {op} {right}")
-                }
+                } // Self::FuncDecl(ident, expr) => {
+                  //     write!(fmt, "int {ident} {{\n    {expr}\n}}")
+                  // }
             }
         }
     }
@@ -112,6 +120,19 @@ mod test {
                     Expr::Literal(3).into(),
                 ),
             ),
+            (
+                "game-3 * 6",
+                Expr::BinaryOp(
+                    Expr::Ident("game").into(),
+                    BinaryOp::Sub,
+                    Expr::BinaryOp(
+                        Expr::Literal(3).into(),
+                        BinaryOp::Mul,
+                        Expr::Literal(6).into(),
+                    )
+                    .into(),
+                ),
+            ),
         ] {
             dbg!(case);
             assert_eq!(
@@ -123,10 +144,32 @@ mod test {
     }
 
     #[test]
-    fn game() {
-        assert_eq!(
-            nqc::AddSubOpParser::new().parse("+").unwrap(),
-            BinaryOp::Add
-        );
+    fn stmt() {
+        for (case, expected) in [
+            ("22;", Stmt::Expr(Expr::Literal(22).into())),
+            ("(22);", Stmt::Expr(Expr::Literal(22).into())),
+            (
+                "(((33))+3);",
+                Stmt::Expr(
+                    Expr::BinaryOp(
+                        Expr::Literal(33).into(),
+                        BinaryOp::Add,
+                        Expr::Literal(3).into(),
+                    )
+                    .into(),
+                ),
+            ),
+            (
+                "int game {43}",
+                Stmt::FuncDecl("game", Expr::Literal(43).into()),
+            ),
+        ] {
+            dbg!(case);
+            assert_eq!(
+                *nqc::StmtParser::new().parse(case).unwrap(),
+                expected,
+                "{case}"
+            );
+        }
     }
 }

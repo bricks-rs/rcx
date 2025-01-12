@@ -1,7 +1,12 @@
 use std::str::FromStr;
-use crate::lalrpop_version::ast::{Expr, BinaryOp};
+use crate::lalrpop_version::ast::{Expr, BinaryOp, Stmt};
 
 grammar;
+
+pub Stmt: Box<Stmt<'input>> = {
+    <Expr> ";" => Stmt::Expr(<>).into(),
+    FuncDecl,
+}
 
 pub Expr: Box<Expr<'input>> = {
     AddSubExpr,
@@ -35,3 +40,7 @@ pub Term: Box<Expr<'input>> = {
 
 Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();
 Ident: &'input str = r"[_a-zA-Z][_a-zA-Z0-9]*";
+
+FuncDecl: Box<Stmt<'input>> = {
+    "int" <Ident> "{" <Expr> "}" => Box::new(Stmt::FuncDecl(<>)),
+}
