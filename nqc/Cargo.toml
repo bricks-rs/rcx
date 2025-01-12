@@ -11,8 +11,6 @@ description = "[wip] Compiler for the NQC programming language for Lego RCX"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ariadne = "0.5.0"
-chumsky = "1.0.0-alpha.7"
 lalrpop-util = { version = "0.22.0", features = ["lexer"] }
 miette = "7.4.0"
 strum = { version = "0.26.1", features = ["derive"] }
