@@ -1,12 +1,13 @@
 pub mod ast;
-pub mod error;
-pub mod lexer;
 pub mod parser;
 
-pub use error::{Error, ErrorKind};
+pub mod binfmt;
+pub mod disasm;
+pub mod opcodes;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Span {
-    start: usize,
-    length: usize,
-}
+mod display_impls;
+pub mod enums;
+
+pub mod errors;
+
+pub use errors::{Error, Result};

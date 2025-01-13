@@ -597,13 +597,20 @@ dependencies = [
 name = "nqc"
 version = "0.0.0"
 dependencies = [
+ "askama",
+ "hex",
+ "hex-literal",
  "insta",
  "lalrpop",
  "lalrpop-util",
  "miette",
+ "nom",
  "pretty_assertions",
+ "serde",
+ "serde_yaml",
  "strum",
  "thiserror 2.0.11",
+ "tracing",
 ]
 
 [[package]]
@@ -745,6 +752,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "nom",
+ "nqc",
  "pretty_assertions",
  "serde",
  "serde_yaml",

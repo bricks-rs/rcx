@@ -122,7 +122,7 @@ pub enum Sound {
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct MotorSelection {
-    pub(crate) bitfield: u8,
+    pub bitfield: u8,
 }
 
 impl MotorSelection {

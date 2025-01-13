@@ -1,16 +1,11 @@
 #![doc = include_str!("../README.md")]
 
-pub mod binfmt;
-pub mod disasm;
-pub mod opcodes;
 pub mod tower;
 
-mod display_impls;
-mod enums;
-mod errors;
-
-pub use enums::*;
 pub use errors::{Error, Result};
+pub use nqc::enums::*;
+pub use nqc::errors;
+use nqc::opcodes;
 
 use tower::IrTower;
 
