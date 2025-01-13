@@ -1,7 +1,7 @@
 pub mod ast;
 pub mod error;
-pub mod lalrpop_version;
 pub mod lexer;
+pub mod parser;
 
 pub use error::{Error, ErrorKind};
 

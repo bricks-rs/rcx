@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::lalrpop_version::ast::{Expr, BinaryOp, Stmt};
+use crate::parser::ast::{Expr, BinaryOp, Stmt};
 
 grammar;
 
@@ -13,7 +13,7 @@ pub Expr: Box<Expr<'input>> = {
 };
 
 AddSubExpr: Box<Expr<'input>> = {
-    AddSubExpr AddSubOp MulDivExpr => Box::new(Expr::BinaryOp(<>)),
+    AddSubExpr AddSubOp MulDivExpr => Expr::BinaryOp(<>).into(),
     MulDivExpr,
 }
 
@@ -23,7 +23,7 @@ pub AddSubOp: BinaryOp = {
 };
 
 MulDivExpr: Box<Expr<'input>> = {
-    MulDivExpr MulDivOp Term => Box::new(Expr::BinaryOp(<>)),
+    MulDivExpr MulDivOp Term => Expr::BinaryOp(<>).into(),
     Term,
 }
 
@@ -33,8 +33,8 @@ MulDivOp: BinaryOp = {
 }
 
 pub Term: Box<Expr<'input>> = {
-    Num => Box::new(Expr::Literal(<>)),
-    Ident => Box::new(Expr::Ident(<>)),
+    Num => Expr::Literal(<>).into(),
+    Ident => Expr::Ident(<>).into(),
     "(" <Expr> ")",
 };
 
@@ -42,5 +42,5 @@ Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();
 Ident: &'input str = r"[_a-zA-Z][_a-zA-Z0-9]*";
 
 FuncDecl: Box<Stmt<'input>> = {
-    "int" <Ident> "{" <Expr> "}" => Box::new(Stmt::FuncDecl(<>)),
+    "int" <Ident> "{" <Expr> "}" => Stmt::FuncDecl(<>).into(),
 }

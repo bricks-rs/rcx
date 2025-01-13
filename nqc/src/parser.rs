@@ -15,6 +15,17 @@ pub mod ast {
         FuncDecl(&'input str, Box<Expr<'input>>),
     }
 
+    impl Display for Stmt<'_> {
+        fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+            match self {
+                Self::Expr(expr) => Display::fmt(expr, fmt),
+                Self::FuncDecl(ident, expr) => {
+                    write!(fmt, "int {ident} {{\n    {expr}\n}}")
+                }
+            }
+        }
+    }
+
     #[derive(Debug, PartialEq, Eq)]
     pub enum Expr<'input> {
         Literal(i32),
@@ -29,9 +40,7 @@ pub mod ast {
                 Self::Ident(ident) => fmt.write_str(ident),
                 Self::BinaryOp(left, op, right) => {
                     write!(fmt, "{left} {op} {right}")
-                } // Self::FuncDecl(ident, expr) => {
-                  //     write!(fmt, "int {ident} {{\n    {expr}\n}}")
-                  // }
+                }
             }
         }
     }
