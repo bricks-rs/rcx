@@ -8,6 +8,10 @@ pub Stmt: Box<Stmt<'input>> = {
     FuncDecl,
 }
 
+pub Block: Vec<Box<Expr<'input>>> = {
+    (<Expr> ";")*
+}
+
 pub Expr: Box<Expr<'input>> = {
     AddSubExpr,
 };
@@ -42,5 +46,5 @@ Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();
 Ident: &'input str = r"[_a-zA-Z][_a-zA-Z0-9]*";
 
 FuncDecl: Box<Stmt<'input>> = {
-    "int" <Ident> "{" <Expr> "}" => Stmt::FuncDecl(<>).into(),
+    "int" <Ident> "()" "{" <Block> "}" => Stmt::FuncDecl(<>).into(),
 }

@@ -12,7 +12,7 @@ pub mod ast {
     #[derive(Debug, PartialEq, Eq)]
     pub enum Stmt<'input> {
         Expr(Box<Expr<'input>>),
-        FuncDecl(&'input str, Box<Expr<'input>>),
+        FuncDecl(&'input str, Vec<Box<Expr<'input>>>),
     }
 
     impl Display for Stmt<'_> {
@@ -20,7 +20,7 @@ pub mod ast {
             match self {
                 Self::Expr(expr) => Display::fmt(expr, fmt),
                 Self::FuncDecl(ident, expr) => {
-                    write!(fmt, "int {ident} {{\n    {expr}\n}}")
+                    write!(fmt, "int {ident} {{\n    {expr:?}\n}}")
                 }
             }
         }
@@ -169,8 +169,8 @@ mod test {
                 ),
             ),
             (
-                "int game {43}",
-                Stmt::FuncDecl("game", Expr::Literal(43).into()),
+                "int game() {43;}",
+                Stmt::FuncDecl("game", vec![Expr::Literal(43).into()]),
             ),
         ] {
             dbg!(case);
@@ -180,5 +180,56 @@ mod test {
                 "{case}"
             );
         }
+    }
+
+    #[test]
+    fn block() {
+        let cases: &[(&str, &[Box<Expr>])] = &[
+            ("22;", &[Expr::Literal(22).into()]),
+            ("(22);", &[Expr::Literal(22).into()]),
+            (
+                "(((33))+3);",
+                &[Expr::BinaryOp(
+                    Expr::Literal(33).into(),
+                    BinaryOp::Add,
+                    Expr::Literal(3).into(),
+                )
+                .into()],
+            ),
+            (
+                "22;33; 44;",
+                &[
+                    Expr::Literal(22).into(),
+                    Expr::Literal(33).into(),
+                    Expr::Literal(44).into(),
+                ],
+            ),
+        ];
+
+        for (case, expected) in cases {
+            dbg!(case);
+            assert_eq!(
+                *nqc::BlockParser::new().parse(case).unwrap(),
+                **expected,
+                "{case}"
+            );
+        }
+    }
+
+    #[test]
+    fn func() {
+        let case = "int game() {
+            22;
+            33;
+        }";
+        let expected = Stmt::FuncDecl(
+            "game",
+            vec![Expr::Literal(22).into(), Expr::Literal(33).into()],
+        );
+        assert_eq!(
+            *nqc::StmtParser::new().parse(case).unwrap(),
+            expected,
+            "{case}"
+        );
     }
 }
