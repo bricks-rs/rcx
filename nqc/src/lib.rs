@@ -1,3 +1,4 @@
+pub mod asm;
 pub mod binfmt;
 pub mod disasm;
 pub mod nqc;
