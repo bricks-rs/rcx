@@ -6,69 +6,10 @@ lalrpop_mod!(
 	nqc
 );
 
-pub mod ast {
-    use std::fmt::{Display, Formatter};
-
-    #[derive(Debug, PartialEq, Eq)]
-    pub enum Stmt<'input> {
-        Expr(Box<Expr<'input>>),
-        FuncDecl(&'input str, Vec<Box<Expr<'input>>>),
-    }
-
-    impl Display for Stmt<'_> {
-        fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-            match self {
-                Self::Expr(expr) => Display::fmt(expr, fmt),
-                Self::FuncDecl(ident, expr) => {
-                    write!(fmt, "int {ident} {{\n    {expr:?}\n}}")
-                }
-            }
-        }
-    }
-
-    #[derive(Debug, PartialEq, Eq)]
-    pub enum Expr<'input> {
-        Literal(i32),
-        Ident(&'input str),
-        BinaryOp(Box<Expr<'input>>, BinaryOp, Box<Expr<'input>>),
-    }
-
-    impl Display for Expr<'_> {
-        fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-            match self {
-                Self::Literal(val) => write!(fmt, "{val}"),
-                Self::Ident(ident) => fmt.write_str(ident),
-                Self::BinaryOp(left, op, right) => {
-                    write!(fmt, "{left} {op} {right}")
-                }
-            }
-        }
-    }
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    pub enum BinaryOp {
-        Add,
-        Sub,
-        Mul,
-        Div,
-    }
-
-    impl Display for BinaryOp {
-        fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-            fmt.write_str(match self {
-                Self::Add => "+",
-                Self::Sub => "-",
-                Self::Mul => "*",
-                Self::Div => "/",
-            })
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use super::ast::*;
     use super::*;
+    use crate::nqc::ast::*;
 
     #[test]
     fn term() {

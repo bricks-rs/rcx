@@ -1,8 +1,6 @@
-pub mod ast;
-pub mod parser;
-
 pub mod binfmt;
 pub mod disasm;
+pub mod nqc;
 pub mod opcodes;
 
 mod display_impls;

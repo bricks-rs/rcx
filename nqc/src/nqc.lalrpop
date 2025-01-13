@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::parser::ast::{Expr, BinaryOp, Stmt};
+use crate::nqc::ast::{Expr, BinaryOp, Stmt};
 
 grammar;
 

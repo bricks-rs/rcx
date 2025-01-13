@@ -1,8 +1,0 @@
----
-source: nqc/src/ast/mod.rs
-expression: ast
-input_file: nqc/tests/good/empty.nqc
----
-Ast {
-    nodes: [],
-}
