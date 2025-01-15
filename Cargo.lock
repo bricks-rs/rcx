@@ -606,6 +606,7 @@ dependencies = [
  "miette",
  "nom",
  "pretty_assertions",
+ "regex",
  "serde",
  "serde_yaml",
  "strum",
